@@ -80,7 +80,7 @@ ClassLoader<T>::ClassLoader(
   lowlevel_class_loader_(false)
   /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Creating ClassLoader, base = %s, address = %p",
+  printf("pluginlib.ClassLoader", "Creating ClassLoader, base = %s, address = %p",
     base_class.c_str(), this);
   if (ros::package::getPath(package_).empty()) {
     throw pluginlib::ClassLoaderException("Unable to find package: " + package_);
@@ -90,7 +90,7 @@ ClassLoader<T>::ClassLoader(
     plugin_xml_paths_ = getPluginXmlPaths(package_, attrib_name_);
   }
   classes_available_ = determineAvailableClasses(plugin_xml_paths_);
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+  printf("pluginlib.ClassLoader",
     "Finished constructring ClassLoader, base = %s, address = %p",
     base_class.c_str(), this);
 }
@@ -99,7 +99,7 @@ template<class T>
 ClassLoader<T>::~ClassLoader()
 /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Destroying ClassLoader, base = %s, address = %p",
+  printf("pluginlib.ClassLoader", "Destroying ClassLoader, base = %s, address = %p",
     getBaseClassType().c_str(), this);
 }
 
@@ -109,25 +109,25 @@ T * ClassLoader<T>::createClassInstance(const std::string & lookup_name, bool au
 /***************************************************************************/
 {
   // Note: This method is deprecated
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+  printf("pluginlib.ClassLoader",
     "In deprecated call createClassInstance(), lookup_name = %s, auto_load = %i.",
     (lookup_name.c_str()), auto_load);
 
   if (auto_load && !isClassLoaded(lookup_name)) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Autoloading class library before attempting to create instance.");
     loadLibraryForClass(lookup_name);
   }
 
   try {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Attempting to create instance through low-level MultiLibraryClassLoader...");
     T * obj = lowlevel_class_loader_.createUnmanagedInstance<T>(getClassType(lookup_name));
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Instance created with object pointer = %p", obj);
+    printf("pluginlib.ClassLoader", "Instance created with object pointer = %p", obj);
 
     return obj;
   } catch (const class_loader::CreateClassException & ex) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "CreateClassException about to be raised for class %s",
+    printf("pluginlib.ClassLoader", "CreateClassException about to be raised for class %s",
       lookup_name.c_str());
     throw pluginlib::CreateClassException(ex.what());
   }
@@ -137,7 +137,7 @@ template<class T>
 boost::shared_ptr<T> ClassLoader<T>::createInstance(const std::string & lookup_name)
 /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Attempting to create managed instance for class %s.",
+  printf("pluginlib.ClassLoader", "Attempting to create managed instance for class %s.",
     lookup_name.c_str());
 
   if (!isClassLoaded(lookup_name)) {
@@ -146,17 +146,17 @@ boost::shared_ptr<T> ClassLoader<T>::createInstance(const std::string & lookup_n
 
   try {
     std::string class_type = getClassType(lookup_name);
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "%s maps to real class type %s",
+    printf("pluginlib.ClassLoader", "%s maps to real class type %s",
       lookup_name.c_str(), class_type.c_str());
 
     boost::shared_ptr<T> obj = lowlevel_class_loader_.createInstance<T>(class_type);
 
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "boost::shared_ptr to object of real type %s created.",
+    printf("pluginlib.ClassLoader", "boost::shared_ptr to object of real type %s created.",
       class_type.c_str());
 
     return obj;
   } catch (const class_loader::CreateClassException & ex) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Exception raised by low-level multi-library class loader when attempting "
       "to create instance of class %s.",
       lookup_name.c_str());
@@ -168,7 +168,7 @@ boost::shared_ptr<T> ClassLoader<T>::createInstance(const std::string & lookup_n
 template<class T>
 UniquePtr<T> ClassLoader<T>::createUniqueInstance(const std::string & lookup_name)
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+  printf("pluginlib.ClassLoader",
     "Attempting to create managed (unique) instance for class %s.",
     lookup_name.c_str());
 
@@ -178,17 +178,17 @@ UniquePtr<T> ClassLoader<T>::createUniqueInstance(const std::string & lookup_nam
 
   try {
     std::string class_type = getClassType(lookup_name);
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "%s maps to real class type %s",
+    printf("pluginlib.ClassLoader", "%s maps to real class type %s",
       lookup_name.c_str(), class_type.c_str());
 
     UniquePtr<T> obj = lowlevel_class_loader_.createUniqueInstance<T>(class_type);
 
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "std::unique_ptr to object of real type %s created.",
+    printf("pluginlib.ClassLoader", "std::unique_ptr to object of real type %s created.",
       class_type.c_str());
 
     return obj;
   } catch (const class_loader::CreateClassException & ex) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Exception raised by low-level multi-library class loader when attempting "
       "to create instance of class %s.",
       lookup_name.c_str());
@@ -201,7 +201,7 @@ template<class T>
 T * ClassLoader<T>::createUnmanagedInstance(const std::string & lookup_name)
 /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Attempting to create UNMANAGED instance for class %s.",
+  printf("pluginlib.ClassLoader", "Attempting to create UNMANAGED instance for class %s.",
     lookup_name.c_str());
 
   if (!isClassLoaded(lookup_name)) {
@@ -210,15 +210,15 @@ T * ClassLoader<T>::createUnmanagedInstance(const std::string & lookup_name)
 
   T * instance = 0;
   try {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Attempting to create instance through low level multi-library class loader.");
     std::string class_type = getClassType(lookup_name);
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "%s maps to real class type %s",
+    printf("pluginlib.ClassLoader", "%s maps to real class type %s",
       lookup_name.c_str(), class_type.c_str());
     instance = lowlevel_class_loader_.createUnmanagedInstance<T>(class_type);
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Instance of type %s created.", class_type.c_str());
+    printf("pluginlib.ClassLoader", "Instance of type %s created.", class_type.c_str());
   } catch (const class_loader::CreateClassException & ex) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+    printf("pluginlib.ClassLoader",
       "Exception raised by low-level multi-library class loader when attempting "
       "to create UNMANAGED instance of class %s.",
       lookup_name.c_str());
@@ -250,7 +250,7 @@ std::map<std::string, ClassDesc> ClassLoader<T>::determineAvailableClasses(
   // seem to be correct.
   // With time I keep correcting small things, but a good rewrite is needed.
 
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Entering determineAvailableClasses()...");
+  printf("pluginlib.ClassLoader", "Entering determineAvailableClasses()...");
   std::map<std::string, ClassDesc> classes_available;
 
   // Walk the list of all plugin XML files (variable "paths") that are exported by the build system
@@ -266,7 +266,7 @@ std::map<std::string, ClassDesc> ClassLoader<T>::determineAvailableClasses(
     }
   }
 
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Exiting determineAvailableClasses()...");
+  printf("pluginlib.ClassLoader", "Exiting determineAvailableClasses()...");
   return classes_available;
 }
 
@@ -404,27 +404,27 @@ std::string ClassLoader<T>::getClassLibraryPath(const std::string & lookup_name)
 /***************************************************************************/
 {
   if (classes_available_.find(lookup_name) == classes_available_.end()) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Class %s has no mapping in classes_available_.",
+    printf("pluginlib.ClassLoader", "Class %s has no mapping in classes_available_.",
       lookup_name.c_str());
     return "";
   }
   ClassMapIterator it = classes_available_.find(lookup_name);
   std::string library_name = it->second.library_name_;
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Class %s maps to library %s in classes_available_.",
+  printf("pluginlib.ClassLoader", "Class %s maps to library %s in classes_available_.",
     lookup_name.c_str(), library_name.c_str());
 
   std::vector<std::string> paths_to_try =
     getAllLibraryPathsToTry(library_name, it->second.package_);
 
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+  printf("pluginlib.ClassLoader",
     "Iterating through all possible paths where %s could be located...",
     library_name.c_str());
   for (std::vector<std::string>::const_iterator it = paths_to_try.begin(); it != paths_to_try.end();
     it++)
   {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Checking path %s ", it->c_str());
+    printf("pluginlib.ClassLoader", "Checking path %s ", it->c_str());
     if (boost::filesystem::exists(*it)) {
-      ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Library %s found at explicit path %s.",
+      printf("pluginlib.ClassLoader", "Library %s found at explicit path %s.",
         library_name.c_str(), it->c_str());
       return *it;
     }
@@ -601,14 +601,14 @@ void ClassLoader<T>::loadLibraryForClass(const std::string & lookup_name)
 {
   ClassMapIterator it = classes_available_.find(lookup_name);
   if (it == classes_available_.end()) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Class %s has no mapping in classes_available_.",
+    printf("pluginlib.ClassLoader", "Class %s has no mapping in classes_available_.",
       lookup_name.c_str());
     throw pluginlib::LibraryLoadException(getErrorStringForUnknownClass(lookup_name));
   }
 
   std::string library_path = getClassLibraryPath(lookup_name);
   if ("" == library_path) {
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "No path could be found to the library containing %s.",
+    printf("pluginlib.ClassLoader", "No path could be found to the library containing %s.",
       lookup_name.c_str());
     std::ostringstream error_msg;
     error_msg << "Could not find library corresponding to plugin " << lookup_name <<
@@ -636,7 +636,7 @@ void ClassLoader<T>::processSingleXMLPluginFile(
   ClassDesc> & classes_available)
 /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Processing xml file %s...", xml_file.c_str());
+  printf("pluginlib.ClassLoader", "Processing xml file %s...", xml_file.c_str());
   tinyxml2::XMLDocument document;
   document.LoadFile(xml_file.c_str());
   tinyxml2::XMLElement * config = document.RootElement();
@@ -698,11 +698,11 @@ void ClassLoader<T>::processSingleXMLPluginFile(
       std::string lookup_name;
       if (class_element->Attribute("name") != NULL) {
         lookup_name = class_element->Attribute("name");
-        ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+        printf("pluginlib.ClassLoader",
           "XML file specifies lookup name (i.e. magic name) = %s.",
           lookup_name.c_str());
       } else {
-        ROS_DEBUG_NAMED("pluginlib.ClassLoader",
+        printf("pluginlib.ClassLoader",
           "XML file has no lookup name (i.e. magic name) for class %s, "
           "assuming lookup_name == real class name.",
           derived_class.c_str());
@@ -736,7 +736,7 @@ template<class T>
 void ClassLoader<T>::refreshDeclaredClasses()
 /***************************************************************************/
 {
-  ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Refreshing declared classes.");
+  printf("pluginlib.ClassLoader", "Refreshing declared classes.");
   // determine classes not currently loaded for removal
   std::list<std::string> remove_classes;
   for (std::map<std::string, ClassDesc>::const_iterator it = classes_available_.begin();
@@ -786,7 +786,7 @@ int ClassLoader<T>::unloadLibraryForClass(const std::string & lookup_name)
   ClassMapIterator it = classes_available_.find(lookup_name);
   if (it != classes_available_.end() && it->second.resolved_library_path_ != "UNRESOLVED") {
     std::string library_path = it->second.resolved_library_path_;
-    ROS_DEBUG_NAMED("pluginlib.ClassLoader", "Attempting to unload library %s for class %s",
+    printf("pluginlib.ClassLoader", "Attempting to unload library %s for class %s",
       library_path.c_str(), lookup_name.c_str());
     return unloadClassLibraryInternal(library_path);
   } else {

@@ -31,7 +31,7 @@
 #define ROSCONSOLE_CONSOLE_IMPL_H
 
 #include <ros/macros.h>
-#include "ros/console.h"
+//#include "ros/console.h"
 
 // export interface functions shared by all impl instances in one single header
 // since CMake would not help define custome flag like ROSCONSOLE_CONSOLE_IMPL_EXPORTS,

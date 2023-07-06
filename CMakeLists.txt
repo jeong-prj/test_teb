@@ -12,12 +12,18 @@ find_package(Eigen3 REQUIRED)
 
 ###
 
-find_package(Boost REQUIRED COMPONENTS system thread graph)
+find_package(Boost REQUIRED COMPONENTS system thread graph filesystem)
 
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 find_package(SUITESPARSE REQUIRED)
 
 find_package(G2O REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+
+
+set(EXTERNAL_INCLUDE_DIRS ${Eigen_INCLUDE_DIRS} ${SUITESPARSE_INCLUDE_DIRS} ${G2O_INCLUDE_DIR})
+set(EXTERNAL_LIBS ${SUITESPARSE_LIBRARIES} ${G2O_LIBRARIES})
 
 ###
 
@@ -43,6 +49,8 @@ file(GLOB_RECURSE SRC_FILES
         src/teb_local_planner_ros.cpp
 #        src/test_optim_node.cpp
         src/timed_elastic_band.cpp
+
+        src/sub_src/*.cpp
         )
 
 
@@ -56,15 +64,64 @@ include_directories(
         ${TEST_TEB_PROJ_DIRECTORY}/include
 )
 
+###
+#find_package(catkin REQUIRED COMPONENTS
+#        base_local_planner
+#        costmap_2d
+#        costmap_converter
+#        cmake_modules
+#        dynamic_reconfigure
+#        geometry_msgs
+#        interactive_markers
+#        message_generation
+#        nav_core
+#        nav_msgs
+#        mbf_costmap_core
+#        mbf_msgs
+#        roscpp
+#        std_msgs
+#        pluginlib
+#        tf2
+#        tf2_eigen
+#        tf2_geometry_msgs
+#        tf2_ros
+#        visualization_msgs
+#        )
+
+#catkin_package(
+#        INCLUDE_DIRS include ${EXTERNAL_INCLUDE_DIRS}
+#        LIBRARIES teb_local_planner ${EXTERNAL_LIBS}
+#        CATKIN_DEPENDS
+#        base_local_planner
+#        costmap_2d
+#        costmap_converter
+#        dynamic_reconfigure
+#        geometry_msgs
+#        interactive_markers
+#        message_runtime
+#        nav_core
+#        nav_msgs
+#        pluginlib
+#        roscpp
+#        mbf_costmap_core
+#        std_msgs
+#        tf2
+#        tf2_ros
+#        visualization_msgs
+#        DEPENDS SUITESPARSE G2O
+#)
+
+###
 
 # build mpbb lib
 add_library(test_teb SHARED ${SRC_FILES})
 target_link_libraries(test_teb
-
         -dpthread
         ${Boost_LIBRARIES}
         ${OpenCV_LIBS}
         ${EIGEN3_LIBS}
+
+        ${EXTERNAL_LIBS}
         )
 
 set_target_properties( test_teb PROPERTIES

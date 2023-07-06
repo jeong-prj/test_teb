@@ -100,7 +100,7 @@ public:
   {
     if (own_mutex_warn_)
     {
-      ROS_WARN("updateConfig() called on a dynamic_reconfigure::Server that provides its own mutex. This can lead to deadlocks if updateConfig() is called during an update. Providing a mutex to the constructor is highly recommended in this case. Please forward this message to the node author.");
+      printf("updateConfig() called on a dynamic_reconfigure::Server that provides its own mutex. This can lead to deadlocks if updateConfig() is called during an update. Providing a mutex to the constructor is highly recommended in this case. Please forward this message to the node author.");
       own_mutex_warn_ = false;
     }
     updateConfigInternal(config);
@@ -200,14 +200,14 @@ private:
       }
       catch (std::exception &e)
       {
-        ROS_WARN("Reconfigure callback failed with exception %s: ", e.what());
+        printf("Reconfigure callback failed with exception %s: ", e.what());
       }
       catch (...)
       {
-        ROS_WARN("Reconfigure callback failed with unprintable exception.");
+        printf("Reconfigure callback failed with unprintable exception.");
       }
     else
-      ROS_DEBUG("setCallback did not call callback because it was zero."); /// @todo kill this line.
+      printf("setCallback did not call callback because it was zero."); /// @todo kill this line.
   }
 
   bool setConfigCallback(dynamic_reconfigure::Reconfigure::Request &req,

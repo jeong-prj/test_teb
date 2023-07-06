@@ -226,7 +226,7 @@ public:
 
     // currently velocity published by stage is already given in the map frame
 //    double yaw = tf::getYaw(orientation.quaternion);
-//    ROS_INFO("Yaw: %f", yaw);
+//    printf("Yaw: %f", yaw);
 //    Eigen::Rotation2Dd rot(yaw);
 //    vel = rot * vel;
     setCentroidVelocity(vel);

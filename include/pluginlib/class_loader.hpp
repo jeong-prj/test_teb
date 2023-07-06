@@ -39,7 +39,7 @@
 #include "pluginlib/class_desc.hpp"
 #include "pluginlib/class_loader_base.hpp"
 #include "pluginlib/exceptions.hpp"
-#include "ros/console.h"
+//#include "ros/console.h"
 #include "ros/package.h"
 #include "tinyxml2.h"  // NOLINT
 

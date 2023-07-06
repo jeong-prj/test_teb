@@ -52,7 +52,7 @@
 #include <geometry_msgs/Point.h>
 #include <std_msgs/ColorRGBA.h>
 
-#include <ros/console.h>
+//#include <ros/console.h>
 #include <ros/ros.h>
 
 #include <teb_local_planner/planner_interface.h>

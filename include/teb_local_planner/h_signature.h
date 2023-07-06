@@ -203,7 +203,7 @@ public:
                 return true; // Found! Homotopy class already exists, therefore nothing added
         }
         else
-            ROS_ERROR("Cannot compare HSignature equivalence classes with types other than HSignature.");
+            printf("Cannot compare HSignature equivalence classes with types other than HSignature.");
 
         return false;
     }
@@ -316,7 +316,7 @@ public:
           else // otherwise use the time information from the teb trajectory
           {
             if (std::distance(path_iter, path_end) != std::distance(timediff_iter, timediff_end.get()))
-              ROS_ERROR("Size of poses and timediff vectors does not match. This is a bug.");
+              printf("Size of poses and timediff vectors does not match. This is a bug.");
             next_transition_time += (*timediff_iter)->dt();
           }
 
@@ -377,7 +377,7 @@ public:
         }
       }
       else
-          ROS_ERROR("Cannot compare HSignature3d equivalence classes with types other than HSignature3d.");
+          printf("Cannot compare HSignature3d equivalence classes with types other than HSignature3d.");
 
       return false;
     }

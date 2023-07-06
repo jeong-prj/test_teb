@@ -32,7 +32,7 @@
 #ifndef ROSCONSOLE_ROSASSERT_H
 #define ROSCONSOLE_ROSASSERT_H
 
-#include "ros/console.h"
+//#include "ros/console.h"
 #include "ros/static_assert.h"
 
 /** \file */
@@ -113,25 +113,25 @@
 #ifdef ROS_ASSERT_ENABLED
 #define ROS_BREAK() \
   do { \
-    ROS_FATAL("BREAKPOINT HIT\n\tfile = %s\n\tline=%d\n", __FILE__, __LINE__); \
-    ROS_ISSUE_BREAK() \
+    printf("BREAKPOINT HIT\n\tfile = %s\n\tline=%d\n", __FILE__, __LINE__); \
+    break; \
   } while (false)
 
 #define ROS_ASSERT(cond) \
   do { \
     if (!(cond)) { \
-      ROS_FATAL("ASSERTION FAILED\n\tfile = %s\n\tline = %d\n\tcond = %s\n", __FILE__, __LINE__, #cond); \
-      ROS_ISSUE_BREAK() \
+      printf("ASSERTION FAILED\n\tfile = %s\n\tline = %d\n\tcond = %s\n", __FILE__, __LINE__, #cond); \
+      break;\
     } \
   } while (false)
 
 #define ROS_ASSERT_MSG(cond, ...) \
   do { \
     if (!(cond)) { \
-      ROS_FATAL("ASSERTION FAILED\n\tfile = %s\n\tline = %d\n\tcond = %s\n\tmessage = ", __FILE__, __LINE__, #cond); \
-      ROS_FATAL(__VA_ARGS__); \
-      ROS_FATAL("\n"); \
-      ROS_ISSUE_BREAK(); \
+      printf("ASSERTION FAILED\n\tfile = %s\n\tline = %d\n\tcond = %s\n\tmessage = ", __FILE__, __LINE__, #cond); \
+      printf(__VA_ARGS__); \
+      printf("\n"); \
+      break; \
     } \
   } while (false)
 

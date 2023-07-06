@@ -190,7 +190,7 @@ public:
       
       if (spin_thread)
       {
-        ROS_DEBUG_NAMED("costmap_converter", "Spinning up a thread for the CostmapToPolygons plugin");
+        printf("costmap_converter", "Spinning up a thread for the CostmapToPolygons plugin");
         need_to_terminate_ = false;
         spin_thread_ = new boost::thread(boost::bind(&BaseCostmapToPolygons::spinThread, this));
         nh_.setCallbackQueue(&callback_queue_);
@@ -296,7 +296,7 @@ public:
     }
     catch(const pluginlib::PluginlibException& ex)
     {
-      ROS_WARN("CostmapToDynamicObstacles: The specified costmap converter plugin cannot be loaded. Continuing without subsequent conversion of static obstacles. Error message: %s", ex.what());
+      printf("CostmapToDynamicObstacles: The specified costmap converter plugin cannot be loaded. Continuing without subsequent conversion of static obstacles. Error message: %s", ex.what());
       static_costmap_converter_.reset();
     }
   }

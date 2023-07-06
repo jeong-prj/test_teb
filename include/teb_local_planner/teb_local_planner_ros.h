@@ -61,15 +61,15 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <visualization_msgs/Marker.h>
-#include <costmap_converter/ObstacleMsg.h>
-
+//#include <costmap_converter/ObstacleMsg.h>
+//
 // transforms
 #include <tf2/utils.h>
 #include <tf2_ros/buffer.h>
 
 // costmap
 #include <costmap_2d/costmap_2d_ros.h>
-#include <costmap_converter/costmap_converter_interface.h>
+//#include <costmap_converter/costmap_converter_interface.h>
 
 
 // dynamic reconfigure
@@ -241,7 +241,7 @@ protected:
    * @remarks All previous obstacles are cleared.
    * @sa updateObstacleContainerWithCostmap
    */
-  void updateObstacleContainerWithCostmapConverter();
+//  void updateObstacleContainerWithCostmapConverter();
   
   /**
    * @brief Update internal obstacle vector based on custom messages received via subscriber
@@ -274,7 +274,7 @@ protected:
     * @brief Callback for custom obstacles that are not obtained from the costmap 
     * @param obst_msg pointer to the message containing a list of polygon shaped obstacles
     */
-  void customObstacleCB(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst_msg);
+//  void customObstacleCB(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst_msg);
   
    /**
     * @brief Callback for custom via-points
@@ -413,13 +413,13 @@ private:
   
   base_local_planner::OdometryHelperRos odom_helper_; //!< Provides an interface to receive the current velocity from the robot
   
-  pluginlib::ClassLoader<costmap_converter::BaseCostmapToPolygons> costmap_converter_loader_; //!< Load costmap converter plugins at runtime
-  boost::shared_ptr<costmap_converter::BaseCostmapToPolygons> costmap_converter_; //!< Store the current costmap_converter  
+//  pluginlib::ClassLoader<costmap_converter::BaseCostmapToPolygons> costmap_converter_loader_; //!< Load costmap converter plugins at runtime
+//  boost::shared_ptr<costmap_converter::BaseCostmapToPolygons> costmap_converter_; //!< Store the current costmap_converter
 
   boost::shared_ptr< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> > dynamic_recfg_; //!< Dynamic reconfigure server to allow config modifications at runtime
   ros::Subscriber custom_obst_sub_; //!< Subscriber for custom obstacles received via a ObstacleMsg.
   boost::mutex custom_obst_mutex_; //!< Mutex that locks the obstacle array (multi-threaded)
-  costmap_converter::ObstacleArrayMsg custom_obstacle_msg_; //!< Copy of the most recent obstacle message
+//  costmap_converter::ObstacleArrayMsg custom_obstacle_msg_; //!< Copy of the most recent obstacle message
 
   ros::Subscriber via_points_sub_; //!< Subscriber for custom via-points received via a Path msg.
   bool custom_via_points_active_; //!< Keep track whether valid via-points have been received from via_points_sub_

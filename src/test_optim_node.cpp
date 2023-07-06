@@ -271,7 +271,7 @@ void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst
     }
     else if (obst_msg->obstacles.at(i).polygon.points.empty())
     {
-      ROS_WARN("Invalid custom obstacle received. List of polygon vertices is empty. Skipping...");
+      printf("Invalid custom obstacle received. List of polygon vertices is empty. Skipping...");
       continue;
     }
     else
@@ -299,7 +299,7 @@ void CB_clicked_points(const geometry_msgs::PointStampedConstPtr& point_msg)
   via_points.push_back( Eigen::Vector2d(point_msg->point.x, point_msg->point.y) );
   ROS_INFO_STREAM("Via-point (" << point_msg->point.x << "," << point_msg->point.y << ") added.");
   if (config.optim.weight_viapoint<=0)
-    ROS_WARN("Note, via-points are deactivated, since 'weight_via_point' <= 0");
+    printf("Note, via-points are deactivated, since 'weight_via_point' <= 0");
 }
 
 void CB_via_points(const nav_msgs::Path::ConstPtr& via_points_msg)
@@ -316,7 +316,7 @@ void CB_setObstacleVelocity(const geometry_msgs::TwistConstPtr& twist_msg, const
 {
   if (id >= obst_vector.size())
   {
-    ROS_WARN("Cannot set velocity: unknown obstacle id.");
+    printf("Cannot set velocity: unknown obstacle id.");
     return;
   }
 

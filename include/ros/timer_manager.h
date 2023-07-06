@@ -436,7 +436,7 @@ void TimerManager<T, D, E>::updateNext(const TimerInfoPtr& info, const T& curren
     // detect time jumping forward, as well as callbacks that are too slow
     if (info->next_expected + info->period < current_time)
     {
-      ROS_DEBUG("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current_time - info->next_expected).toSec(), info->period.toSec(), current_time.toSec(), info->next_expected.toSec());
+      printf("Time jumped forward by [%f] for timer of period [%f], resetting timer (current=%f, next_expected=%f)", (current_time - info->next_expected).toSec(), info->period.toSec(), current_time.toSec(), info->next_expected.toSec());
       info->next_expected = current_time;
     }
   }
@@ -538,7 +538,7 @@ void TimerManager<T, D, E>::threadFunc()
         {
           current = T::now();
 
-          //ROS_DEBUG("Scheduling timer callback for timer [%d] of period [%f], [%f] off expected", info->handle, info->period.toSec(), (current - info->next_expected).toSec());
+          //printf("Scheduling timer callback for timer [%d] of period [%f], [%f] off expected", info->handle, info->period.toSec(), (current - info->next_expected).toSec());
           CallbackInterfacePtr cb(boost::make_shared<TimerQueueCallback>(this, info, info->last_expected, info->last_real, info->next_expected, info->last_expired, current));
           info->callback_queue->addCallback(cb, (uint64_t)info.get());
 

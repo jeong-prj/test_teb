@@ -160,7 +160,7 @@ class Client {
       received_configuration_ = true;
       return true;
     } else {
-      ROS_WARN("Could not set configuration");
+      printf("Could not set configuration");
       return false;
     }
   }
@@ -268,9 +268,9 @@ class Client {
       try {
         config_callback_(latest_configuration_);
       } catch (std::exception& e) {
-        ROS_WARN("Configuration callback failed with exception %s", e.what());
+        printf("Configuration callback failed with exception %s", e.what());
       } catch (...) {
-        ROS_WARN("Configuration callback failed with unprintable exception");
+        printf("Configuration callback failed with unprintable exception");
       }
     } else {
       ROS_DEBUG(
@@ -290,9 +290,9 @@ class Client {
       try {
         description_callback_(description);
       } catch (std::exception& e) {
-        ROS_WARN("Description callback failed with exception %s", e.what());
+        printf("Description callback failed with exception %s", e.what());
       } catch (...) {
-        ROS_WARN("Description callback failed with unprintable exception");
+        printf("Description callback failed with unprintable exception");
       }
     } else {
       ROS_DEBUG(

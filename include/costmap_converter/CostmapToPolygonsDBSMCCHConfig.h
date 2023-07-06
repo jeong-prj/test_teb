@@ -288,19 +288,19 @@ double convex_hull_min_pt_separation;
 
       if (count != dynamic_reconfigure::ConfigTools::size(msg))
       {
-        ROS_ERROR("CostmapToPolygonsDBSMCCHConfig::__fromMessage__ called with an unexpected parameter.");
-        ROS_ERROR("Booleans:");
+        printf("CostmapToPolygonsDBSMCCHConfig::__fromMessage__ called with an unexpected parameter.");
+        printf("Booleans:");
         for (unsigned int i = 0; i < msg.bools.size(); i++)
-          ROS_ERROR("  %s", msg.bools[i].name.c_str());
-        ROS_ERROR("Integers:");
+          printf("  %s", msg.bools[i].name.c_str());
+        printf("Integers:");
         for (unsigned int i = 0; i < msg.ints.size(); i++)
-          ROS_ERROR("  %s", msg.ints[i].name.c_str());
-        ROS_ERROR("Doubles:");
+          printf("  %s", msg.ints[i].name.c_str());
+        printf("Doubles:");
         for (unsigned int i = 0; i < msg.doubles.size(); i++)
-          ROS_ERROR("  %s", msg.doubles[i].name.c_str());
-        ROS_ERROR("Strings:");
+          printf("  %s", msg.doubles[i].name.c_str());
+        printf("Strings:");
         for (unsigned int i = 0; i < msg.strs.size(); i++)
-          ROS_ERROR("  %s", msg.strs[i].name.c_str());
+          printf("  %s", msg.strs[i].name.c_str());
         // @todo Check that there are no duplicates. Make this error more
         // explicit.
         return false;

@@ -178,7 +178,7 @@ void HomotopyClassPlanner::visualize()
       }
     }
   }
-  else ROS_DEBUG("Ignoring HomotopyClassPlanner::visualize() call, since no visualization class was instantiated before.");
+  else printf("Ignoring HomotopyClassPlanner::visualize() call, since no visualization class was instantiated before.");
 }
 
 
@@ -201,7 +201,7 @@ bool HomotopyClassPlanner::addEquivalenceClassIfNew(const EquivalenceClassPtr& e
 
   if (!eq_class->isValid())
   {
-    ROS_WARN("HomotopyClassPlanner: Ignoring invalid H-signature");
+    printf("HomotopyClassPlanner: Ignoring invalid H-signature");
     return false;
   }
 
@@ -316,7 +316,7 @@ void HomotopyClassPlanner::updateReferenceTrajectoryViaPoints(bool all_trajector
 
   if(equivalence_classes_.size() < tebs_.size())
   {
-    ROS_ERROR("HomotopyClassPlanner::updateReferenceTrajectoryWithViaPoints(): Number of h-signatures does not match number of trajectories.");
+    printf("HomotopyClassPlanner::updateReferenceTrajectoryWithViaPoints(): Number of h-signatures does not match number of trajectories.");
     return;
   }
 
@@ -456,7 +456,7 @@ void HomotopyClassPlanner::updateAllTEBs(const PoseSE2* start, const PoseSE2* go
       && ((goal->position() - tebs_.front()->teb().BackPose().position()).norm() >= cfg_->trajectory.force_reinit_new_goal_dist
         || fabs(g2o::normalize_theta(goal->theta() - tebs_.front()->teb().BackPose().theta())) >= cfg_->trajectory.force_reinit_new_goal_angular))
   {
-      ROS_DEBUG("New goal: distance to existing goal is higher than the specified threshold. Reinitalizing trajectories.");
+      printf("New goal: distance to existing goal is higher than the specified threshold. Reinitalizing trajectories.");
       tebs_.clear();
       equivalence_classes_.clear();
   }
@@ -511,7 +511,7 @@ TebOptimalPlannerPtr HomotopyClassPlanner::getInitialPlanTEB()
         else
         {
             initial_plan_teb_.reset(); // reset pointer for next call
-            ROS_DEBUG("initial teb not found, trying to find a match according to the cached equivalence class");
+            printf("initial teb not found, trying to find a match according to the cached equivalence class");
         }
     }
 
@@ -536,10 +536,10 @@ TebOptimalPlannerPtr HomotopyClassPlanner::getInitialPlanTEB()
             }
          }
          else
-             ROS_ERROR("HomotopyClassPlanner::getInitialPlanTEB(): number of equivalence classes (%lu) and number of trajectories (%lu) does not match.", equivalence_classes_.size(), tebs_.size());
+             printf("HomotopyClassPlanner::getInitialPlanTEB(): number of equivalence classes (%lu) and number of trajectories (%lu) does not match.", equivalence_classes_.size(), tebs_.size());
     }
     else
-        ROS_DEBUG("HomotopyClassPlanner::getInitialPlanTEB(): initial TEB not found in the set of available trajectories.");
+        printf("HomotopyClassPlanner::getInitialPlanTEB(): initial TEB not found in the set of available trajectories.");
 
     return TebOptimalPlannerPtr();
 }
@@ -602,7 +602,7 @@ TebOptimalPlannerPtr HomotopyClassPlanner::selectBestTeb()
         // check if the related TEB leaves the local costmap region
 //      if (tebs_.size()>1 && !(*it_teb)->teb().isTrajectoryInsideRegion(20, -1, 1))
 //      {
-//          ROS_INFO("HomotopyClassPlanner::selectBestTeb(): skipping trajectories that are not inside the local costmap");
+//          printf("HomotopyClassPlanner::selectBestTeb(): skipping trajectories that are not inside the local costmap");
 //          continue;
 //      }
 
@@ -627,7 +627,7 @@ TebOptimalPlannerPtr HomotopyClassPlanner::selectBestTeb()
   // in case we haven't found any teb due to some previous checks, investigate list again
 //   if (!best_teb_ && !tebs_.empty())
 //   {
-//       ROS_DEBUG("all " << tebs_.size() << " tebs rejected previously");
+//       printf("all " << tebs_.size() << " tebs rejected previously");
 //       if (tebs_.size()==1)
 //         best_teb_ = tebs_.front();
 //       else // if multiple TEBs are available:
@@ -663,7 +663,7 @@ TebOptimalPlannerPtr HomotopyClassPlanner::selectBestTeb()
       }
       else
       {
-        ROS_DEBUG("HomotopyClassPlanner::selectBestTeb(): Switching equivalence classes blocked (check parameter switching_blocking_period.");
+        printf("HomotopyClassPlanner::selectBestTeb(): Switching equivalence classes blocked (check parameter switching_blocking_period.");
         // block switching, so revert best_teb_
         best_teb_ = last_best_teb_;
       }
@@ -700,7 +700,7 @@ bool HomotopyClassPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel
     TebOptimalPlannerPtr best = findBestTeb();
     if (!best)
     {
-      ROS_ERROR("Couldn't retrieve the best plan");
+      printf("Couldn't retrieve the best plan");
       return false;
     }
     feasible = best->isTrajectoryFeasible(costmap_model, footprint_spec, inscribed_radius, circumscribed_radius, look_ahead_idx);
@@ -728,7 +728,7 @@ TebOptPlannerContainer::iterator HomotopyClassPlanner::removeTeb(TebOptimalPlann
   TebOptPlannerContainer::iterator return_iterator = tebs_.end();
   if(equivalence_classes_.size() != tebs_.size())
   {
-      ROS_ERROR("removeTeb: size of eq classes != size of tebs");
+      printf("removeTeb: size of eq classes != size of tebs");
       return return_iterator;
   }
   auto it_eq_classes = equivalence_classes_.begin();
@@ -792,14 +792,14 @@ void HomotopyClassPlanner::deletePlansDetouringBackwards(const double orient_thr
     }
     if((*it_teb)->teb().sizePoses() < 2)
     {
-      ROS_DEBUG("Discarding a plan with less than 2 poses");
+      printf("Discarding a plan with less than 2 poses");
       it_teb = removeTeb(*it_teb);
       continue;
     }
     double plan_orientation;
     if(!computeStartOrientation(*it_teb, len_orientation_vector, plan_orientation))
     {
-      ROS_DEBUG("Failed to compute the start orientation for one of the tebs, likely close to the target");
+      printf("Failed to compute the start orientation for one of the tebs, likely close to the target");
       it_teb = removeTeb(*it_teb);
       continue;
     }
@@ -810,13 +810,13 @@ void HomotopyClassPlanner::deletePlansDetouringBackwards(const double orient_thr
     }
     if(!it_teb->get()->isOptimized())
     {
-      ROS_DEBUG("Removing a teb because it's not optimized");
+      printf("Removing a teb because it's not optimized");
       it_teb = removeTeb(*it_teb);  // Deletes tebs that cannot be optimized (last optim call failed)
       continue;
     }
     if(it_teb->get()->teb().getSumOfAllTimeDiffs() / best_plan_duration > cfg_->hcp.max_ratio_detours_duration_best_duration)
     {
-      ROS_DEBUG("Removing a teb because it's duration is much longer than that of the best teb");
+      printf("Removing a teb because it's duration is much longer than that of the best teb");
       it_teb = removeTeb(*it_teb);
       continue;
     }

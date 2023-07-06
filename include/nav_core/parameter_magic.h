@@ -61,7 +61,7 @@ param_t loadParameterWithDeprecation(const ros::NodeHandle& nh, const std::strin
   }
   if (nh.hasParam(old_name))
   {
-    // ROS_WARN("Parameter %s is deprecated. Please use the name %s instead.", old_name.c_str(), current_name.c_str());
+    // printf("Parameter %s is deprecated. Please use the name %s instead.", old_name.c_str(), current_name.c_str());
     nh.getParam(old_name, value);
     return value;
   }
@@ -77,7 +77,7 @@ void warnRenamedParameter(const ros::NodeHandle& nh, const std::string current_n
 {
   if (nh.hasParam(old_name))
   {
-    // ROS_WARN("Parameter %s is deprecated (and will not load properly). Use %s instead.", old_name.c_str(), current_name.c_str());
+    // printf("Parameter %s is deprecated (and will not load properly). Use %s instead.", old_name.c_str(), current_name.c_str());
   }
 }
 

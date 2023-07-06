@@ -29,7 +29,7 @@
 #define ROSCPP_FILE_LOG_H
 
 #include "forwards.h"
-#include <ros/console.h>
+//#include <ros/console.h>
 #include "common.h"
 
 #define ROSCPP_LOG_DEBUG(...) ROS_DEBUG_NAMED("roscpp_internal", __VA_ARGS__)

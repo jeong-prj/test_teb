@@ -123,7 +123,7 @@ public:
 
     if (!msg)
     {
-      ROS_DEBUG("Allocation failed for message of type [%s]", getTypeInfo().name());
+      printf("Allocation failed for message of type [%s]", getTypeInfo().name());
       return VoidConstPtr();
     }
 
