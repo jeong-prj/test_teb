@@ -39,8 +39,8 @@
 #ifndef TEB_CONFIG_H_
 #define TEB_CONFIG_H_
 
-#include <ros/console.h>
-#include <ros/ros.h>
+//#include <ros/console.h>
+//#include <ros/ros.h>
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
@@ -387,7 +387,7 @@ public:
    * @brief Load parmeters from the ros param server.
    * @param nh const reference to the local ros::NodeHandle
    */
-  void loadRosParamFromNodeHandle(const ros::NodeHandle& nh);
+//  void loadRosParamFromNodeHandle(const ros::NodeHandle& nh);
 
   /**
    * @brief Reconfigure parameters from the dynamic_reconfigure config.
@@ -411,7 +411,7 @@ public:
    * @brief Check if some deprecated parameters are found and print warnings
    * @param nh const reference to the local ros::NodeHandle
    */
-  void checkDeprecated(const ros::NodeHandle& nh) const;
+//  void checkDeprecated(const ros::NodeHandle& nh) const;
 
   /**
    * @brief Return the internal config mutex

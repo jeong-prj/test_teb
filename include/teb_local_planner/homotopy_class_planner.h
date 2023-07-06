@@ -48,7 +48,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <visualization_msgs/Marker.h>
+//#include <visualization_msgs/Marker.h>
 #include <geometry_msgs/Point.h>
 #include <std_msgs/ColorRGBA.h>
 

@@ -74,7 +74,7 @@ void CB_setObstacleVelocity(const geometry_msgs::TwistConstPtr& twist_msg, const
 
 
 // =============== Main function =================
-int main( int argc, char** argv )
+int main2( int argc, char** argv )
 {
   ros::init(argc, argv, "test_optim_node");
   ros::NodeHandle n("~");

@@ -1,14 +1,25 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(mpbb_tests)
+project(test_teb)
 
 #add_compile_options(-std=c++11)
 set (CMAKE_CXX_STANDARD 11)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-set(MPBB_PROJ_DIRECTORY ${PROJECT_SOURCE_DIR} )
+set(TEST_TEB_PROJ_DIRECTORY ${PROJECT_SOURCE_DIR} )
 
 find_package(OpenCV 3.2 REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system thread)
+#find_package(Boost REQUIRED COMPONENTS system thread)
+
+###
+
+find_package(Boost REQUIRED COMPONENTS system thread graph)
+
+SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+find_package(SUITESPARSE REQUIRED)
+
+find_package(G2O REQUIRED)
+
+###
 
 find_package(OpenMP REQUIRED)
 find_package(OpenMP)
@@ -20,8 +31,21 @@ endif()
 
 
 file(GLOB_RECURSE SRC_FILES
-        src/*.cpp
+#        src/*.cpp
+        example/teb_basics.cpp
+
+        src/graph_search.cpp
+#        src/homotopy_class_planner.cpp
+        src/obstacles.cpp
+        src/optimal_planner.cpp
+        src/recovery_behaviors.cpp
+        src/teb_config.cpp
+        src/teb_local_planner_ros.cpp
+#        src/test_optim_node.cpp
+        src/timed_elastic_band.cpp
         )
+
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -29,13 +53,13 @@ include_directories(
         ${OpenCV_INCLUDE_DIRS}
         ${EIGEN3_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
-        ${MPBB_PROJ_DIRECTORY}/include
+        ${TEST_TEB_PROJ_DIRECTORY}/include
 )
 
 
 # build mpbb lib
-add_library(mpbb SHARED ${SRC_FILES})
-target_link_libraries(mpbb
+add_library(test_teb SHARED ${SRC_FILES})
+target_link_libraries(test_teb
 
         -dpthread
         ${Boost_LIBRARIES}
@@ -43,13 +67,13 @@ target_link_libraries(mpbb
         ${EIGEN3_LIBS}
         )
 
-set_target_properties( mpbb PROPERTIES
-        LIBRARY_OUTPUT_DIRECTORY ${MPBB_PROJ_DIRECTORY}/lib
+set_target_properties( test_teb PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${TEST_TEB_PROJ_DIRECTORY}/lib
         )
 
-add_executable(mpbb_run ${MPBB_PROJ_DIRECTORY}/example/mpbb_run.cpp ${SRC_FILES} )
-target_link_libraries( mpbb_run mpbb)
-set_target_properties( mpbb_run PROPERTIES
+add_executable(test_teb_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_basics.cpp)
+target_link_libraries( test_teb_run test_teb)
+set_target_properties( test_teb_run PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 

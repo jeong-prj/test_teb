@@ -81,10 +81,11 @@ TebLocalPlannerROS::~TebLocalPlannerROS()
 void TebLocalPlannerROS::reconfigureCB(TebLocalPlannerReconfigureConfig& config, uint32_t level)
 {
   cfg_.reconfigure(config);
-  ros::NodeHandle nh("~/" + name_);
+//  ros::NodeHandle nh("~/" + name_);
   // create robot footprint/contour model for optimization
-  RobotFootprintModelPtr robot_model = getRobotFootprintFromParamServer(nh, cfg_);
-  planner_->updateRobotModel(robot_model);
+//  RobotFootprintModelPtr robot_model = getRobotFootprintFromParamServer(nh, cfg_);
+    RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>();
+    planner_->updateRobotModel(robot_model);
 }
 
 void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
@@ -94,31 +95,32 @@ void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costm
   {	
     name_ = name;
     // create Node Handle with name of plugin (as used in move_base for loading)
-    ros::NodeHandle nh("~/" + name);
+//    ros::NodeHandle nh("~/" + name);
 	        
     // get parameters of TebConfig via the nodehandle and override the default config
-    cfg_.loadRosParamFromNodeHandle(nh);       
+//    cfg_.loadRosParamFromNodeHandle(nh);
     
     // reserve some memory for obstacles
     obstacles_.reserve(500);
         
-    // create visualization instance	
-    visualization_ = TebVisualizationPtr(new TebVisualization(nh, cfg_)); 
+//    // create visualization instance
+//    visualization_ = TebVisualizationPtr(new TebVisualization(nh, cfg_));
         
     // create robot footprint/contour model for optimization
-    RobotFootprintModelPtr robot_model = getRobotFootprintFromParamServer(nh, cfg_);
+    //RobotFootprintModelPtr robot_model = getRobotFootprintFromParamServer(nh, cfg_);
     
     // create the planner instance
-    if (cfg_.hcp.enable_homotopy_class_planning)
-    {
-      planner_ = PlannerInterfacePtr(new HomotopyClassPlanner(cfg_, &obstacles_, robot_model, visualization_, &via_points_));
-      ROS_INFO("Parallel planning in distinctive topologies enabled.");
-    }
-    else
-    {
+//    if (cfg_.hcp.enable_homotopy_class_planning)
+//    {
+//      planner_ = PlannerInterfacePtr(new HomotopyClassPlanner(cfg_, &obstacles_, robot_model, visualization_, &via_points_));
+//      ROS_INFO("Parallel planning in distinctive topologies enabled.");
+//    }
+//    else
+//    {
+      RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>();
       planner_ = PlannerInterfacePtr(new TebOptimalPlanner(cfg_, &obstacles_, robot_model, visualization_, &via_points_));
-      ROS_INFO("Parallel planning in distinctive topologies disabled.");
-    }
+      printf("Parallel planning in distinctive topologies disabled.");
+//    }
     
     // init other variables
     tf_ = tf;
@@ -132,7 +134,7 @@ void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costm
     robot_base_frame_ = costmap_ros_->getBaseFrameID();
 
     //Initialize a costmap to polygon converter
-    if (!cfg_.obstacles.costmap_converter_plugin.empty())
+    /*if (!cfg_.obstacles.costmap_converter_plugin.empty())
     {
       try
       {
@@ -145,7 +147,7 @@ void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costm
         costmap_converter_->setCostmap2D(costmap_);
         
         costmap_converter_->startWorker(ros::Rate(cfg_.obstacles.costmap_converter_rate), costmap_, cfg_.obstacles.costmap_converter_spin_thread);
-        ROS_INFO_STREAM("Costmap conversion plugin " << cfg_.obstacles.costmap_converter_plugin << " loaded.");        
+        ROS_INFO_STREAM("Costmap conversion plugin " << cfg_.obstacles.costmap_converter_plugin << " loaded.");
       }
       catch(pluginlib::PluginlibException& ex)
       {
@@ -154,7 +156,7 @@ void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costm
       }
     }
     else 
-      ROS_INFO("No costmap conversion plugin specified. All occupied costmap cells are treaten as point obstacles.");
+      ROS_INFO("No costmap conversion plugin specified. All occupied costmap cells are treaten as point obstacles.");*/
   
     
     // Get footprint of the robot and minimum and maximum distance from the center of the robot to its footprint vertices.
@@ -165,24 +167,24 @@ void TebLocalPlannerROS::initialize(std::string name, tf2_ros::Buffer* tf, costm
     odom_helper_.setOdomTopic(cfg_.odom_topic);
 
     // setup dynamic reconfigure
-    dynamic_recfg_ = boost::make_shared< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> >(nh);
-    dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig>::CallbackType cb = boost::bind(&TebLocalPlannerROS::reconfigureCB, this, _1, _2);
-    dynamic_recfg_->setCallback(cb);
+//    dynamic_recfg_ = boost::make_shared< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> >(nh);
+//    dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig>::CallbackType cb = boost::bind(&TebLocalPlannerROS::reconfigureCB, this, _1, _2);
+//    dynamic_recfg_->setCallback(cb);
     
     // validate optimization footprint and costmap footprint
-    validateFootprints(robot_model->getInscribedRadius(), robot_inscribed_radius_, cfg_.obstacles.min_obstacle_dist);
+//    validateFootprints(robot_model->getInscribedRadius(), robot_inscribed_radius_, cfg_.obstacles.min_obstacle_dist);
         
-    // setup callback for custom obstacles
-    custom_obst_sub_ = nh.subscribe("obstacles", 1, &TebLocalPlannerROS::customObstacleCB, this);
-
-    // setup callback for custom via-points
-    via_points_sub_ = nh.subscribe("via_points", 1, &TebLocalPlannerROS::customViaPointsCB, this);
-    
+//    // setup callback for custom obstacles
+//    custom_obst_sub_ = nh.subscribe("obstacles", 1, &TebLocalPlannerROS::customObstacleCB, this);
+//
+//    // setup callback for custom via-points
+//    via_points_sub_ = nh.subscribe("via_points", 1, &TebLocalPlannerROS::customViaPointsCB, this);
+//
     // initialize failure detector
-    ros::NodeHandle nh_move_base("~");
-    double controller_frequency = 5;
-    nh_move_base.param("controller_frequency", controller_frequency, controller_frequency);
-    failure_detector_.setBufferLength(std::round(cfg_.recovery.oscillation_filter_duration*controller_frequency));
+//    ros::NodeHandle nh_move_base("~");
+//    double controller_frequency = 5;
+//    nh_move_base.param("controller_frequency", controller_frequency, controller_frequency);
+//    failure_detector_.setBufferLength(std::round(cfg_.recovery.oscillation_filter_duration*controller_frequency));
     
     // set initialized flag
     initialized_ = true;
@@ -458,11 +460,11 @@ uint32_t TebLocalPlannerROS::computeVelocityCommands(const geometry_msgs::PoseSt
   // store last command (for recovery analysis etc.)
   last_cmd_ = cmd_vel.twist;
   
-  // Now visualize everything    
-  planner_->visualize();
-  visualization_->publishObstacles(obstacles_);
-  visualization_->publishViaPoints(via_points_);
-  visualization_->publishGlobalPlan(global_plan_);
+//  // Now visualize everything
+//  planner_->visualize();
+//  visualization_->publishObstacles(obstacles_);
+//  visualization_->publishViaPoints(via_points_);
+//  visualization_->publishGlobalPlan(global_plan_);
   return mbf_msgs::ExePathResult::SUCCESS;
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

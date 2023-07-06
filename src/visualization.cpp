@@ -55,7 +55,7 @@ TebVisualization::TebVisualization(ros::NodeHandle& nh, const TebConfig& cfg) : 
 void TebVisualization::initialize(ros::NodeHandle& nh, const TebConfig& cfg)
 {
   if (initialized_)
-    ROS_WARN("TebVisualization already initialized. Reinitalizing...");
+//     ROS_WARN("TebVisualization already initialized. Reinitalizing...");
   
   // set config
   cfg_ = &cfg;
@@ -508,7 +508,7 @@ bool TebVisualization::printErrorWhenNotInitialized() const
 {
   if (!initialized_)
   {
-    ROS_ERROR("TebVisualization class not initialized. You must call initialize or an appropriate constructor");
+//     ROS_ERROR("TebVisualization class not initialized. You must call initialize or an appropriate constructor");
     return true;
   }
   return false;
