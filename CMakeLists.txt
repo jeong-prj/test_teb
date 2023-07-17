@@ -40,19 +40,24 @@ endif()
 file(GLOB_RECURSE SRC_FILES
 #        src/*.cpp
         example/teb_basics.cpp
-
 #        src/graph_search.cpp
 #        src/homotopy_class_planner.cpp
         src/obstacles.cpp
         src/optimal_planner.cpp
         src/recovery_behaviors.cpp
         src/teb_config.cpp
-        src/teb_local_planner_ros.cpp
+#        src/teb_local_planner_ros.cpp
 #        src/test_optim_node.cpp
         src/timed_elastic_band.cpp
 
-        src/sub_src/*.cpp
-        src/sub_src/*.c
+        src/sub_src/duration.cpp
+        src/sub_src/footprint.cpp
+        src/sub_src/array_parser.cpp
+        src/sub_src/costmap_math.cpp
+
+#        src/xml_/*.cpp
+
+#        src/sub_src/*.c
         )
 
 
@@ -116,7 +121,7 @@ include_directories(
 ###
 
 # build mpbb lib
-add_library(test_teb SHARED ${SRC_FILES})
+add_library(test_teb SHARED ${SRC_FILES} include/ros/impl/duration.h)
 target_link_libraries(test_teb
         -dpthread
         ${Boost_LIBRARIES}
@@ -130,7 +135,7 @@ set_target_properties( test_teb PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${TEST_TEB_PROJ_DIRECTORY}/lib
         )
 
-add_executable(test_teb_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_basics.cpp)
+add_executable(test_teb_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_basics.cpp include/ros/impl/duration.h)
 target_link_libraries( test_teb_run test_teb)
 set_target_properties( test_teb_run PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

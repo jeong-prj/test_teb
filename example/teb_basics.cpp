@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-    printf("??");
+    printf("??\n");
 
   double dt = 0.1;
   double dt_hysteresis = dt/3.;
@@ -18,11 +18,16 @@ int main(int argc, char** argv)
   teb.addPoseAndTimeDiff(teb_local_planner::PoseSE2(10., 0., 0.), dt + 2*dt_hysteresis);
 //
 //  // auto resize + test of the result
-//  teb.autoResize(dt, dt_hysteresis, 3, 100, false);
-//  for (int i = 0; i < teb.sizeTimeDiffs(); ++i) {
-//    ASSERT_LE(teb.TimeDiff(i), dt + dt_hysteresis + 1e-3) << "dt is greater than allowed: " << i;
-//    ASSERT_LE(dt - dt_hysteresis - 1e-3, teb.TimeDiff(i)) << "dt is less than allowed: " << i;
-//  }
+  teb.autoResize(dt, dt_hysteresis, 3, 100, false);
+  for (int i = 0; i < teb.sizeTimeDiffs(); ++i) {
+      if(teb.TimeDiff(i) >= dt + dt_hysteresis + 1e-3)
+        std::cout << "dt is greater than allowed: " << i<<std::endl;
+      else if(dt - dt_hysteresis - 1e-3 >= teb.TimeDiff(i))
+        std::cout << "dt is less than allowed: " << i <<std::endl;
+      else
+          std::cout << "allowed\n" ;
+  }
+    printf("done!\n");
 
     return 0;
 }
