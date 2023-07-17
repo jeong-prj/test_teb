@@ -18,7 +18,8 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 find_package(SUITESPARSE REQUIRED)
 
 find_package(G2O REQUIRED)
-find_package(Eigen3 REQUIRED)
+
+#find_package(Eigen3 REQUIRED)
 
 
 
@@ -40,7 +41,7 @@ file(GLOB_RECURSE SRC_FILES
 #        src/*.cpp
         example/teb_basics.cpp
 
-        src/graph_search.cpp
+#        src/graph_search.cpp
 #        src/homotopy_class_planner.cpp
         src/obstacles.cpp
         src/optimal_planner.cpp
@@ -51,6 +52,7 @@ file(GLOB_RECURSE SRC_FILES
         src/timed_elastic_band.cpp
 
         src/sub_src/*.cpp
+        src/sub_src/*.c
         )
 
 
@@ -120,8 +122,8 @@ target_link_libraries(test_teb
         ${Boost_LIBRARIES}
         ${OpenCV_LIBS}
         ${EIGEN3_LIBS}
-
         ${EXTERNAL_LIBS}
+
         )
 
 set_target_properties( test_teb PROPERTIES

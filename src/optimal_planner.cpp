@@ -64,9 +64,11 @@ TebOptimalPlanner::TebOptimalPlanner() : cfg_(NULL), obstacles_(NULL), via_point
 {    
 }
   
-TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
-{    
-  initialize(cfg, obstacles, robot_model, visual, via_points);
+//TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
+TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points)
+{
+//  initialize(cfg, obstacles, robot_model, visual, via_points);
+        initialize(cfg, obstacles, robot_model, via_points);
 }
 
 TebOptimalPlanner::~TebOptimalPlanner()
@@ -84,8 +86,9 @@ void TebOptimalPlanner::updateRobotModel(RobotFootprintModelPtr robot_model)
   robot_model_ = robot_model;
 }
 
-void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
-{    
+//void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
+void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points)
+{
   // init optimizer (set solver and block ordering settings)
   optimizer_ = initOptimizer();
   
@@ -95,7 +98,7 @@ void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacle
   via_points_ = via_points;
   cost_ = HUGE_VAL;
   prefer_rotdir_ = RotType::none;
-  setVisualization(visual);
+  //setVisualization(visual);
   
   vel_start_.first = true;
   vel_start_.second.linear.x = 0;
@@ -109,26 +112,26 @@ void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacle
   initialized_ = true;
 }
 
+//ej
+//void TebOptimalPlanner::setVisualization(TebVisualizationPtr visualization)
+//{
+//  visualization_ = visualization;
+//}
 
-void TebOptimalPlanner::setVisualization(TebVisualizationPtr visualization)
-{
-  visualization_ = visualization;
-}
-
-void TebOptimalPlanner::visualize()
-{
-  if (!visualization_)
-    return;
- 
-  visualization_->publishLocalPlanAndPoses(teb_);
-  
-  if (teb_.sizePoses() > 0)
-    visualization_->publishRobotFootprintModel(teb_.Pose(0), *robot_model_);
-  
-  if (cfg_->trajectory.publish_feedback)
-    visualization_->publishFeedbackMessage(*this, *obstacles_);
- 
-}
+//void TebOptimalPlanner::visualize()
+//{
+//  if (!visualization_)
+//    return;
+//
+//  visualization_->publishLocalPlanAndPoses(teb_);
+//
+//  if (teb_.sizePoses() > 0)
+//    visualization_->publishRobotFootprintModel(teb_.Pose(0), *robot_model_);
+//
+//  if (cfg_->trajectory.publish_feedback)
+//    visualization_->publishFeedbackMessage(*this, *obstacles_);
+//
+//}
 
 
 /*
@@ -1263,10 +1266,10 @@ bool TebOptimalPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel* c
   {           
     if ( costmap_model->footprintCost(teb().Pose(i).x(), teb().Pose(i).y(), teb().Pose(i).theta(), footprint_spec, inscribed_radius, circumscribed_radius) == -1 )
     {
-      if (visualization_)
-      {
-        visualization_->publishInfeasibleRobotPose(teb().Pose(i), *robot_model_);
-      }
+//      if (visualization_)
+//      {
+//        visualization_->publishInfeasibleRobotPose(teb().Pose(i), *robot_model_);
+//      }
       return false;
     }
     // Checks if the distance between two poses is higher than the robot radius or the orientation diff is bigger than the specified threshold
@@ -1290,10 +1293,10 @@ bool TebOptimalPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel* c
           if ( costmap_model->footprintCost(intermediate_pose.x(), intermediate_pose.y(), intermediate_pose.theta(),
             footprint_spec, inscribed_radius, circumscribed_radius) == -1 )
           {
-            if (visualization_) 
-            {
-              visualization_->publishInfeasibleRobotPose(intermediate_pose, *robot_model_);
-            }
+//            if (visualization_)
+//            {
+//              visualization_->publishInfeasibleRobotPose(intermediate_pose, *robot_model_);
+//            }
             return false;
           }
         }

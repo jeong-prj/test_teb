@@ -47,7 +47,7 @@
 #include <teb_local_planner/misc.h>
 #include <teb_local_planner/timed_elastic_band.h>
 #include <teb_local_planner/planner_interface.h>
-#include <teb_local_planner/visualization.h>
+//#include <teb_local_planner/visualization.h>
 #include <teb_local_planner/robot_footprint_model.h>
 
 // g2o lib stuff
@@ -114,9 +114,10 @@ public:
    * @param visual Shared pointer to the TebVisualization class (optional)
    * @param via_points Container storing via-points (optional)
    */
-  TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
-                    TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
-  
+//  TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
+//                    TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
+    TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
+                       const ViaPointContainer* via_points = NULL);
   /**
    * @brief Destruct the optimal planner.
    */
@@ -130,9 +131,10 @@ public:
     * @param visual Shared pointer to the TebVisualization class (optional)
     * @param via_points Container storing via-points (optional)
     */
-  void initialize(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
-                  TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
-  
+//  void initialize(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
+//                  TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
+    void initialize(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
+                    const ViaPointContainer* via_points = NULL);
   /**
     * @param robot_model Shared pointer to the robot shape model used for optimization (optional)
     */
@@ -316,7 +318,7 @@ public:
    * @param visualization shared pointer to a TebVisualization instance
    * @see visualize
    */
-  void setVisualization(TebVisualizationPtr visualization);
+  //void setVisualization(TebVisualizationPtr visualization);
   
   /**
    * @brief Publish the local plan and pose sequence via ros topics (e.g. subscribe with rviz).
@@ -324,7 +326,7 @@ public:
    * Make sure to register a TebVisualization instance before using setVisualization() or an overlaoded constructor.
    * @see setVisualization
    */
-  virtual void visualize();
+//  virtual void visualize();
   
   //@}
   
@@ -506,7 +508,7 @@ public:
    */
   virtual bool isTrajectoryFeasible(base_local_planner::CostmapModel* costmap_model, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0,
           double circumscribed_radius=0.0, int look_ahead_idx=-1);
-  
+
   //@}
   
 protected:
@@ -688,7 +690,7 @@ protected:
   RotType prefer_rotdir_; //!< Store whether to prefer a specific initial rotation in optimization (might be activated in case the robot oscillates)
   
   // internal objects (memory management owned)
-  TebVisualizationPtr visualization_; //!< Instance of the visualization class
+  //TebVisualizationPtr visualization_; //!< Instance of the visualization class
   TimedElasticBand teb_; //!< Actual trajectory object
   RobotFootprintModelPtr robot_model_; //!< Robot model
   boost::shared_ptr<g2o::SparseOptimizer> optimizer_; //!< g2o optimizer for trajectory optimization
