@@ -28,18 +28,19 @@ set(EXTERNAL_LIBS ${SUITESPARSE_LIBRARIES} ${G2O_LIBRARIES})
 
 ###
 
-find_package(OpenMP REQUIRED)
-find_package(OpenMP)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
+#find_package(OpenMP REQUIRED)
+#find_package(OpenMP)
+#if (OPENMP_FOUND)
+#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+#    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+#endif()
 
 
 file(GLOB_RECURSE SRC_FILES
 #        src/*.cpp
-        example/teb_basics.cpp
+#        example/teb_basics.cpp
+        example/teb_overall.cpp
 #        src/graph_search.cpp
 #        src/homotopy_class_planner.cpp
         src/obstacles.cpp
@@ -135,9 +136,14 @@ set_target_properties( test_teb PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${TEST_TEB_PROJ_DIRECTORY}/lib
         )
 
-add_executable(test_teb_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_basics.cpp include/ros/impl/duration.h)
-target_link_libraries( test_teb_run test_teb)
-set_target_properties( test_teb_run PROPERTIES
+#add_executable(test_teb_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_basics.cpp include/ros/impl/duration.h)
+#target_link_libraries( test_teb_run test_teb)
+#set_target_properties( test_teb_run PROPERTIES
+#        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+
+add_executable(teb_overall_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_overall.cpp include/ros/impl/duration.h)
+target_link_libraries( teb_overall_run test_teb)
+set_target_properties( teb_overall_run PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 

@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-    printf("??\n");
+    printf("start\n");
 
   double dt = 0.1;
   double dt_hysteresis = dt/3.;
