@@ -4,6 +4,8 @@
 #include "teb_local_planner/timed_elastic_band.h"
 #include "teb_local_planner/optimal_planner.h"
 #include "teb_local_planner/recovery_behaviors.h"
+#include "global_planning_handler.hpp"
+#include "tf2/"
 
 // Params
 teb_local_planner::PlannerInterfacePtr planner_; //!< Instance of the underlying optimal planner class
@@ -13,8 +15,15 @@ teb_local_planner::ViaPointContainer via_points_; //!< Container of via-points t
 boost::shared_ptr<base_local_planner::CostmapModel> costmap_model_;
 teb_local_planner::TebConfig cfg_; //!< Config class that stores and manages all related parameters
 teb_local_planner::FailureDetector failure_detector_; //!< Detect if the robot got stucked
+tf2_ros::Buffer* tf_;
+teb_local_planner::PoseSE2 robot_pose_;
 
 std::vector<geometry_msgs::PoseStamped> global_plan_; //!< Store the current global plan
+costmap_2d::Costmap2D* mpo_costmap;
+
+std::string m_worldFrameId = "map";
+//std::string m_mapFrameId ;
+std::string m_baseFrameId = "base_link";
 
 void initialize_t(){
     teb_local_planner::RobotFootprintModelPtr robot_model = boost::make_shared<teb_local_planner::PointRobotFootprint>();
@@ -67,15 +76,74 @@ bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamp
     return true;
 }
 
+geometry_msgs::PoseStamped StampedPosefromSE2( const float& x, const float& y, const float& yaw_radian )
+{
+    geometry_msgs::PoseStamped outPose ;
+    outPose.pose.position.x = x ;
+    outPose.pose.position.y = y ;
+
+    float c[3] = {0,};
+    float s[3] = {0,};
+    c[0] = cos(yaw_radian/2) ;
+    c[1] = cos(0) ;
+    c[2] = cos(0) ;
+    s[0] = sin(yaw_radian/2) ;
+    s[1] = sin(0) ;
+    s[2] = sin(0) ;
+
+    float qout[4] = {0,};
+    qout[0] = c[0]*c[1]*c[2] + s[0]*s[1]*s[2];
+    qout[1] = c[0]*c[1]*s[2] - s[0]*s[1]*c[2];
+    qout[2] = c[0]*s[1]*c[2] + s[0]*c[1]*s[2];
+    qout[3] = s[0]*c[1]*c[2] - c[0]*s[1]*s[2];
+
+    outPose.pose.orientation.w = qout[0] ;
+    outPose.pose.orientation.x = qout[1] ;
+    outPose.pose.orientation.y = qout[2] ;
+    outPose.pose.orientation.z = qout[3] ;
+
+    outPose.header.frame_id = m_worldFrameId ;
+    //outPose.header.stamp = 0 ;
+
+    return outPose;
+}
+
 int main(int argc, char** argv)
 {
     printf("start\n");
     initialize_t();
 
+    // Make Global plan before local planner
+    autoexplorer::GlobalPlanningHandler *mpo_gph = new autoexplorer::GlobalPlanningHandler();
+    mpo_gph->reinitialization( mpo_costmap ) ;
+
+    //  Set start position
+    geometry_msgs::Point p;
+    p.x = 0.0;
+    p.y = 0.0;
+    p.z = 0.0 ;
+    geometry_msgs::PoseStamped start = StampedPosefromSE2( p.x, p.y, 0.f );
+    start.header.frame_id = m_worldFrameId;
+
+    //  Set goal position
+    p.x = 1.0;
+    p.y = 1.0;
+    p.z = 0.0 ;
+    geometry_msgs::PoseStamped goal = StampedPosefromSE2( p.x, p.y, 0.f );
+    goal.header.frame_id = m_worldFrameId ;
+    //std::vector<geometry_msgs::PoseStamped> plan;
+
+    bool bplansuccess = mpo_gph->makePlan(start, goal, global_plan_);
+
+    std::cout << bplansuccess <<std::endl;
     // In teb_local_planner_ros -> compute velocity commands
     // 1. teb_local_planner_ros -> prune global plan
-    pruneGlobalPlan_t();
+    // Get robot pose from start pose
+    geometry_msgs::PoseStamped robot_pose;
+    robot_pose = start;
+    robot_pose_ = teb_local_planner::PoseSE2(robot_pose.pose);
 
+    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
 
 
     /*double dt = 0.1;
