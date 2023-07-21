@@ -295,6 +295,7 @@ uint32_t TebLocalPlannerROS::computeVelocityCommands(const geometry_msgs::PoseSt
   nav_msgs::Odometry base_odom;
   odom_helper_.getOdom(base_odom);
 
+  // process 4.
   // check if global goal is reached
   geometry_msgs::PoseStamped global_goal;
   tf2::doTransform(global_plan_.back(), global_goal, tf_plan_to_global);
