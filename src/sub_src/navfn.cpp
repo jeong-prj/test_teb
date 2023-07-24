@@ -44,6 +44,7 @@
 
 
 #include <nav_fn/navfn.h>
+#include <iostream>
 
 namespace navfn {
 
@@ -342,10 +343,12 @@ namespace navfn {
 
       // calculate the nav fn and path
       //propNavFnAstar(std::max(nx*ny/20,nx+ny));
-
+      std::cout<<"nx*ny" << nx*ny<<std::endl;
       propNavFnAstar(nx*ny);
+
       // path
       int len = calcPath(nx*4);
+        std::cout <<"calcPath length: "<< len << std::endl;
 
       if (len > 0)			// found plan
       {
@@ -760,15 +763,18 @@ namespace navfn {
 
       // set initial threshold, based on distance
       float dist = hypot(goal[0]-start[0], goal[1]-start[1])*(float)COST_NEUTRAL;
+      std::cout << dist <<std::endl;
       curT = dist + curT;
 
       // set up start cell
       int startCell = start[1]*nx + start[0];
+        std::cout <<  startCell<<std::endl;
 
       // do main cycle
       for (; cycle < cycles; cycle++) // go for this many cycles, unless interrupted
       {
-        // 
+        //
+          std::cout <<"cycle: "<< cycle << " of cycles "<<cycles<<std::endl;
         if (curPe == 0 && nextPe == 0) // priority blocks empty
           break;
 
@@ -825,8 +831,8 @@ namespace navfn {
 
       last_path_cost_ = potarr[startCell];
 
-     // ROS_DEBUG("[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
-     //     cycle,nc,(int)((nc*100.0)/(ns-nobs)),nwv);
+     printf("[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
+          cycle,nc,(int)((nc*100.0)/(ns-nobs)),nwv);
 
 
       if (potarr[startCell] < POT_HIGH) return true; // finished up here

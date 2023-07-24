@@ -1,6 +1,8 @@
 //
 // Created by ej on 23. 7. 18.
 //
+#include <opencv2/core/types.hpp>
+#include <opencv2/core/mat.hpp>
 #include "teb_local_planner/timed_elastic_band.h"
 #include "teb_local_planner/optimal_planner.h"
 #include "teb_local_planner/recovery_behaviors.h"
@@ -21,6 +23,7 @@ teb_local_planner::FailureDetector failure_detector_; //!< Detect if the robot g
 tf2_ros::Buffer* tf_;
 teb_local_planner::PoseSE2 robot_goal_; //!< Store current robot goal
 teb_local_planner::PoseSE2 robot_pose_;
+geometry_msgs::PoseWithCovarianceStamped m_robotpose ; // (w.r.t world)
 
 geometry_msgs::Twist robot_vel_;
 geometry_msgs::Twist last_cmd_; //!< Store the last control command generated in computeVelocityCommands()
@@ -28,6 +31,9 @@ int no_infeasible_plans_; //!< Store how many times in a row the planner failed 
 std::vector<geometry_msgs::PoseStamped> global_plan_; //!< Store the current global plan
 geometry_msgs::TwistStamped cmd_vel;
 
+uint8_t* mp_cost_translation_table;
+nav_msgs::OccupancyGrid m_globalcostmap ;
+nav_msgs::OccupancyGrid m_gridmap;
 costmap_2d::Costmap2D* mpo_costmap;
 //costmap_2d::Costmap2D* costmap_; //!< Pointer to the 2d costmap (obtained from the costmap ros wrapper)
 
@@ -358,16 +364,187 @@ double convertTransRotVelToSteeringAngle_t(double v, double omega, double wheelb
     return std::atan(wheelbase / radius);
 }
 
+void loadGridMap( const std::string& gridmapfile)
+{
+    std::cout << "start load grid map "<<std::endl;
+    autoexplorer::ifstream ifs_map( gridmapfile );
+    int nheight ;
+    int nwidth ;
+    int value ;
+    float origx ;
+    float origy ;
+    float resolution ;
+    ifs_map >> nwidth >> nheight  >> origx >> origy >> resolution;
+    std::cout << nwidth<< ", " << nheight<< ", "<< origx<< ", "<< origy<< ", "<< resolution <<std::endl;
+    m_gridmap.info.height = nheight ;
+    m_gridmap.info.width  = nwidth ;
+    m_gridmap.info.origin.position.x = origx ;
+    m_gridmap.info.origin.position.y = origy ;
+    m_gridmap.info.resolution = resolution ;
+    std::cout << "Gridmap data? ok?" <<std::endl;
+    for( int ridx=0; ridx < nheight; ridx++ )
+    {
+        for( int cidx=0; cidx < nwidth; cidx++ )
+        {
+            ifs_map >> value ;
+            m_gridmap.data.push_back(value);
+//            std::cout<< int(m_gridmap.data[ridx*nwidth+cidx]) <<", ";
+        }
+//        std::cout <<std::endl;
+    }
+    ifs_map.close();
+}
+
+void loadCostMap( const std::string& costmapfile)
+{
+    std::cout << "start load cost map "<<std::endl;
+    autoexplorer::ifstream ifs_map( costmapfile );
+    int nheight ;
+    int nwidth ;
+    int value ;
+    float origx ;
+    float origy ;
+    float res ;
+    ifs_map >> nwidth >> nheight >> origx >> origy >> res;
+    m_globalcostmap.info.height = nheight ;
+    m_globalcostmap.info.width  = nwidth ;
+    m_globalcostmap.info.origin.position.x = origx ;
+    m_globalcostmap.info.origin.position.y = origy ;
+    m_globalcostmap.info.resolution = res ;
+    std::cout << m_globalcostmap.info.height << ", "<< m_globalcostmap.info.width<< ", "
+    << m_globalcostmap.info.origin.position.x<< ", " << m_globalcostmap.info.origin.position.y<< ", "<< m_globalcostmap.info.resolution<< std::endl;
+    std::cout << "costmap data? ok?" <<std::endl;
+    for( int ridx=0; ridx < nheight; ridx++ )
+    {
+        for( int cidx=0; cidx < nwidth; cidx++ )
+        {
+            ifs_map >> value ;
+//            std::cout<< value <<", ";
+            m_globalcostmap.data.push_back(value);
+//            std::cout<< int(m_globalcostmap.data[ridx*nwidth+cidx]) <<", ";
+        }
+//        std::cout <<std::endl;
+    }
+    ifs_map.close();
+}
+
+geometry_msgs::PoseStamped GetCurrPose ( )
+{
+    geometry_msgs::PoseStamped outPose ;
+    outPose.header = m_robotpose.header ;
+    outPose.pose.position.x = m_robotpose.pose.pose.position.x ;
+    outPose.pose.position.y = m_robotpose.pose.pose.position.y ;
+    outPose.pose.position.z = 0.f ;
+    outPose.pose.orientation = m_robotpose.pose.pose.orientation ;
+
+    return outPose;
+}
+
+void setCostmap(){
+    std::cout << "Start set cost map 2d" <<std::endl;
+    float gmresolution ;
+    uint32_t gmheight, gmwidth;
+
+    nav_msgs::OccupancyGrid globalcostmap;
+    float cmresolution, cmstartx, cmstarty;
+    uint32_t cmwidth, cmheight;
+    std::vector<signed char> cmdata;
+
+    gmresolution = m_gridmap.info.resolution ;
+    gmheight = m_gridmap.info.height ;
+    gmwidth = m_gridmap.info.width ;
+
+    globalcostmap = m_globalcostmap;
+    cmresolution=globalcostmap.info.resolution;
+    cmstartx=globalcostmap.info.origin.position.x;
+    cmstarty=globalcostmap.info.origin.position.y;
+    cmwidth =globalcostmap.info.width;
+    cmheight=globalcostmap.info.height;
+    cmdata  =globalcostmap.data;
+    std::cout << cmresolution << ", "<< cmstartx<< ", " << cmstarty<< ", " << cmwidth<< ", "<< cmheight<< std::endl;
+    std::cout <<"cmdata size: "<< cmdata.size() <<std::endl;
+
+    if( gmheight == 0 || gmwidth == 0
+        || gmwidth  != cmwidth
+        || gmheight != cmheight)
+    {
+        printf("unreliable grid map input h/w (%d, %d) gcostmap h/w (%d, %d) \n",
+               gmheight, gmwidth,
+               cmheight, cmwidth);
+        return;
+    }
+
+    geometry_msgs::PoseStamped start = GetCurrPose( );
+    start.header.frame_id = m_worldFrameId;
+
+    mpo_costmap = new costmap_2d::Costmap2D();
+//    mpo_gph->setCostmap(cmdata, m_globalcostmap.info.width, m_globalcostmap.info.height, m_globalcostmap.info.resolution,
+//					m_globalcostmap.info.origin.position.x, m_globalcostmap.info.origin.position.y) ;
+    //mpo_gph->setCostmap(Data, m_globalcostmap.info.width, m_globalcostmap.info.height, m_globalcostmap.info.resolution,
+	//				m_globalcostmap.info.origin.position.x, m_globalcostmap.info.origin.position.y) ;
+
+//ROS_INFO("resizing mpo_costmap \n");
+    mpo_costmap->resizeMap( cmwidth, cmheight, cmresolution,
+                            cmstartx, cmstarty );
+//ROS_INFO("mpo_costmap has been reset \n");
+    unsigned char* pmap = mpo_costmap->getCharMap() ;
+//    printf("w h datlen : %d %d %d \n", cmwidth, cmheight, cmdata.size() );
+    std::cout<< "pmap?"<< *pmap <<std::endl;
+
+    if (mp_cost_translation_table == NULL)
+    {
+        mp_cost_translation_table = new uint8_t[101];
+
+        // special values:
+        mp_cost_translation_table[0] = 0;  // NO obstacle
+        mp_cost_translation_table[99] = 253;  // INSCRIBED obstacle
+        mp_cost_translation_table[100] = 254;  // LETHAL obstacle
+//		mp_cost_translation_table[-1] = 255;  // UNKNOWN
+
+        // regular cost values scale the range 1 to 252 (inclusive) to fit
+        // into 1 to 98 (inclusive).
+        for (int i = 1; i < 99; i++)
+        {
+            mp_cost_translation_table[ i ] = uint8_t( ((i-1)*251 -1 )/97+1 );
+        }
+    }
+
+    for(uint32_t ridx = 0; ridx < cmheight; ridx++)
+    {
+        for(uint32_t cidx=0; cidx < cmwidth; cidx++)
+        {
+            uint32_t idx = ridx * cmwidth + cidx ;
+            signed char val = cmdata[idx];
+
+            pmap[idx] = val < 0 ? 255 : mp_cost_translation_table[val];
+            std::cout<< int(pmap[idx]) <<", ";
+        }
+        std::cout<<std::endl;
+    }
+}
+
 int main(int argc, char** argv)
 {
     printf("start\n");
     initialize_t();
 
+    std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt" ;
+    loadGridMap(gmapfile);
+    std::cout << "End load grid map" <<std::endl<<std::endl;
+
+    std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_c.txt" ;
+    loadCostMap(cmapfile);
+    std::cout << "End load cost map" <<std::endl<<std::endl;
+
+    setCostmap();
+    std::cout << "End set cost map 2d" <<std::endl<<std::endl;
+
     // Make Global plan before local planner
     std::cout << "new global handler" <<std::endl;
     autoexplorer::GlobalPlanningHandler *mpo_gph = new autoexplorer::GlobalPlanningHandler();
-    std::cout << "global handler- reinitialize" <<std::endl;
+    std::cout << "global handler - reinitialize" <<std::endl;
     mpo_gph->reinitialization( mpo_costmap ) ;
+    std::cout << "Reinitialize mpo_costmap" <<std::endl<<std::endl;
 
     //  Set start position
     std::cout << "Set start position" <<std::endl;
@@ -380,8 +557,8 @@ int main(int argc, char** argv)
 
     //  Set goal position
     std::cout << "Set goal position" <<std::endl;
-    p.x = 1.0;
-    p.y = 1.0;
+    p.x = 0.2;
+    p.y = 0.2;
     p.z = 0.0 ;
     geometry_msgs::PoseStamped goal = StampedPosefromSE2( p.x, p.y, 0.f );
     goal.header.frame_id = m_worldFrameId ;
@@ -390,7 +567,7 @@ int main(int argc, char** argv)
     std::cout << "Make global plan" <<std::endl;
     bool bplansuccess = mpo_gph->makePlan(start, goal, global_plan_);
 
-    std::cout << bplansuccess <<std::endl;
+    std::cout << "Global plan size:"<<bplansuccess <<std::endl <<std::endl;
     // In teb_local_planner_ros -> compute velocity commands
     // 0. Set robot velocity
     // Get robot velocity
