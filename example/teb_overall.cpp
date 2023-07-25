@@ -517,7 +517,7 @@ void setCostmap(){
             signed char val = cmdata[idx];
 
             pmap[idx] = val < 0 ? 255 : mp_cost_translation_table[val];
-            std::cout<< int(pmap[idx]) <<", ";
+//            std::cout<< int(pmap[idx]) <<", ";
         }
         std::cout<<std::endl;
     }
@@ -557,8 +557,8 @@ int main(int argc, char** argv)
 
     //  Set goal position
     std::cout << "Set goal position" <<std::endl;
-    p.x = 0.2;
-    p.y = 0.2;
+    p.x = -2.0;
+    p.y = -2.0;
     p.z = 0.0 ;
     geometry_msgs::PoseStamped goal = StampedPosefromSE2( p.x, p.y, 0.f );
     goal.header.frame_id = m_worldFrameId ;

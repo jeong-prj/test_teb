@@ -775,8 +775,11 @@ namespace navfn {
       {
         //
           std::cout <<"cycle: "<< cycle << " of cycles "<<cycles<<std::endl;
-        if (curPe == 0 && nextPe == 0) // priority blocks empty
-          break;
+        if (curPe == 0 && nextPe == 0){// priority blocks empty
+            std::cout << curPe << " "<< nextPe <<std::endl;
+            break;
+        }
+
 
         // stats
         nc += curPe;
@@ -824,19 +827,22 @@ namespace navfn {
         }
 
         // check if we've hit the Start cell
-        if (potarr[startCell] < POT_HIGH)
-          break;
+        if (potarr[startCell] < POT_HIGH){
+            std::cout<< potarr[startCell]<<", "<< POT_HIGH<<std::endl;
+            printf("potarr[startCell] < Pot high");
+            break;
+        }
 
       }
 
       last_path_cost_ = potarr[startCell];
 
-     printf("[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
+        printf("[NavFn] Used %d cycles, %d cells visited (%d%%), priority buf max %d\n",
           cycle,nc,(int)((nc*100.0)/(ns-nobs)),nwv);
 
 
-      if (potarr[startCell] < POT_HIGH) return true; // finished up here
-      else return false;
+        if (potarr[startCell] < POT_HIGH) return true; // finished up here
+        else return false;
     }
 
 
@@ -985,6 +991,7 @@ namespace navfn {
       float dy=0;
       npath = 0;
 
+      std::cout << "n: "<<n << std::endl;
       // go for <n> cycles at most
       for (int i=0; i<n; i++)
       {
@@ -994,12 +1001,13 @@ namespace navfn {
         {
           pathx[npath] = (float)goal[0];
           pathy[npath] = (float)goal[1];
+          std::cout <<pathx[npath] << ", "<< pathy[npath] << std::endl;
           return ++npath;	// done!
         }
 
         if (stc < nx || stc > ns-nx) // would be out of bounds
         {
-          ///ROS_DEBUG("[PathCalc] Out of bounds");
+            printf("[PathCalc] Out of bounds");
           return 0;
         }
 
@@ -1031,7 +1039,7 @@ namespace navfn {
             potarr[stcpx-1] >= POT_HIGH ||
             oscillation_detected)
         {
-//          ROS_DEBUG("[Path] Pot fn boundary, following grid (%0.1f/%d)", potarr[stc], npath);
+          printf("[Path] Pot fn boundary, following grid (%0.1f/%d)\n", potarr[stc], npath);
           // check eight neighbors to find the lowest
           int minc = stc;
           int minp = potarr[stc];
@@ -1059,56 +1067,65 @@ namespace navfn {
           {
             //savemap("navfn_highpot");
 //savemap("/home/hankm/results/autoexploration/navfn_highpot");
+            std::cout<< "potarr[stc]: "<<potarr[stc]<<std::endl;
             return 0;
           }
         }
 
         // have a good gradient here
-        else			
-        {
-
-          // get grad at four positions near cell
-          gradCell(stc);
-          gradCell(stc+1);
-          gradCell(stcnx);
-          gradCell(stcnx+1);
+        else {
+            // get grad at four positions near cell
+            gradCell(stc);
+            gradCell(stc + 1);
+            gradCell(stcnx);
+            gradCell(stcnx + 1);
 
 
-          // get interpolated gradient
-          float x1 = (1.0-dx)*gradx[stc] + dx*gradx[stc+1];
-          float x2 = (1.0-dx)*gradx[stcnx] + dx*gradx[stcnx+1];
-          float x = (1.0-dy)*x1 + dy*x2; // interpolated x
-          float y1 = (1.0-dx)*grady[stc] + dx*grady[stc+1];
-          float y2 = (1.0-dx)*grady[stcnx] + dx*grady[stcnx+1];
-          float y = (1.0-dy)*y1 + dy*y2; // interpolated y
+            // get interpolated gradient
+            float x1 = (1.0 - dx) * gradx[stc] + dx * gradx[stc + 1];
+            float x2 = (1.0 - dx) * gradx[stcnx] + dx * gradx[stcnx + 1];
+            float x = (1.0 - dy) * x1 + dy * x2; // interpolated x
+            float y1 = (1.0 - dx) * grady[stc] + dx * grady[stc + 1];
+            float y2 = (1.0 - dx) * grady[stcnx] + dx * grady[stcnx + 1];
+            float y = (1.0 - dy) * y1 + dy * y2; // interpolated y
 
-          // show gradients
-//          ROS_DEBUG("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
-//                    gradx[stc], grady[stc], gradx[stc+1], grady[stc+1],
-//                    gradx[stcnx], grady[stcnx], gradx[stcnx+1], grady[stcnx+1],
-//                    x, y);
+            // show gradients
+            printf("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
+                   gradx[stc], grady[stc], gradx[stc + 1], grady[stc + 1],
+                   gradx[stcnx], grady[stcnx], gradx[stcnx + 1], grady[stcnx + 1],
+                   x, y);
 
-          // check for zero gradient, failed
-          if (x == 0.0 && y == 0.0)
-          {
-            return 0;
-          }
+            // check for zero gradient, failed
+            if (x == 0.0 && y == 0.0) {
+                std::cout << "zero gradient " << x << " " << y << std::endl;
+                return 0;
+            }
 
-          // move in the right direction
-          float ss = pathStep/hypot(x, y);
-          dx += x*ss;
-          dy += y*ss;
+            // move in the right direction
+            float ss = pathStep / hypot(x, y);
+            dx += x * ss;
+            dy += y * ss;
 
-          // check for overflow
-          if (dx > 1.0) { stc++; dx -= 1.0; }
-          if (dx < -1.0) { stc--; dx += 1.0; }
-          if (dy > 1.0) { stc+=nx; dy -= 1.0; }
-          if (dy < -1.0) { stc-=nx; dy += 1.0; }
-
+            // check for overflow
+            if (dx > 1.0) {
+                stc++;
+                dx -= 1.0;
+            }
+            if (dx < -1.0) {
+                stc--;
+                dx += 1.0;
+            }
+            if (dy > 1.0) {
+                stc += nx;
+                dy -= 1.0;
+            }
+            if (dy < -1.0) {
+                stc -= nx;
+                dy += 1.0;
+            }
+            printf("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
+                   potarr[stc], x, y, pathx[npath - 1], pathy[npath - 1]);
         }
-
-        //      ROS_INFO("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
-        //	     potarr[stc], x, y, pathx[npath-1], pathy[npath-1]);
       }
 
       //  return npath;			// out of cycles, return failure
