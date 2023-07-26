@@ -58,7 +58,11 @@ file(GLOB_RECURSE SRC_FILES
         src/sub_src/costmap_2d.cpp
         src/sub_src/global_planning_handler.cpp
         src/sub_src/navfn.cpp
-#        src/sub_src/buffer_core.cpp
+        src/sub_src/buffer_core.cpp
+        src/sub_src/cache.cpp
+        src/sub_src/time.cpp
+        src/sub_src/static_cache.cpp
+
 
 #        src/xml_/*.cpp
 

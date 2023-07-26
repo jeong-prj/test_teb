@@ -45,7 +45,7 @@ std::vector<geometry_msgs::Point> footprint_spec_; //!< Store the footprint of t
 double robot_inscribed_radius_; //!< The radius of the inscribed circle of the robot (collision possible)
 double robot_circumscribed_radius; //!< The radius of the circumscribed circle of the robot
 
-std::string global_frame_; //!< The frame in which the controller will run
+std::string global_frame_ = "map"; //!< The frame in which the controller will run
 
 bool goal_reached_; //!< store whether the goal is reached or not
 
@@ -102,6 +102,8 @@ void padFootprint_t(std::vector<geometry_msgs::Point>& footprint, double padding
 void initialize_t(){
     teb_local_planner::RobotFootprintModelPtr robot_model = boost::make_shared<teb_local_planner::PointRobotFootprint>();
     planner_ = teb_local_planner::PlannerInterfacePtr(new teb_local_planner::TebOptimalPlanner(cfg_, &obstacles_, robot_model, &via_points_));
+    //need to tf initialize
+    //    tf_ = tf2_ros::Buffer();
 }
 
 bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& global_plan, double dist_behind_robot)
@@ -113,11 +115,11 @@ bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamp
     {
         // transform robot pose into the plan frame (we do not wait here, since pruning not crucial, if missed a few times)
         // Ignore this time
-//        geometry_msgs::TransformStamped global_to_plan_transform = tf.lookupTransform(global_plan.front().header.frame_id, global_pose.header.frame_id, ros::Time(0));
-//        geometry_msgs::PoseStamped robot;
-//        tf2::doTransform(global_pose, robot, global_to_plan_transform);
+        geometry_msgs::TransformStamped global_to_plan_transform = tf.lookupTransform(global_plan.front().header.frame_id, global_pose.header.frame_id, ros::Time(0));
         geometry_msgs::PoseStamped robot;
-        robot = global_pose;
+        tf2::doTransform(global_pose, robot, global_to_plan_transform);
+//        geometry_msgs::PoseStamped robot;
+//        robot = global_pose;
 
         //distance thresh = dist_behind_robot^2
         double dist_thresh_sq = dist_behind_robot*dist_behind_robot;
@@ -168,6 +170,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
             return false;
         }
 
+        //err
         // get plan_to_global_transform from plan frame to global_frame
         geometry_msgs::TransformStamped plan_to_global_transform = tf.lookupTransform(global_frame, ros::Time(),
                                                                                       plan_pose.header.frame_id,
@@ -268,6 +271,8 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
 
         return false;
     }
+
+    return true;
 }
 
 //update obstacle on the costmap
@@ -419,7 +424,6 @@ void loadCostMap( const std::string& costmapfile)
         for( int cidx=0; cidx < nwidth; cidx++ )
         {
             ifs_map >> value ;
-//            std::cout<< value <<", ";
             m_globalcostmap.data.push_back(value);
 //            std::cout<< int(m_globalcostmap.data[ridx*nwidth+cidx]) <<", ";
         }
@@ -515,11 +519,11 @@ void setCostmap(){
         {
             uint32_t idx = ridx * cmwidth + cidx ;
             signed char val = cmdata[idx];
-
+//            std::cout<< int(cmdata[idx]) <<", ";
             pmap[idx] = val < 0 ? 255 : mp_cost_translation_table[val];
 //            std::cout<< int(pmap[idx]) <<", ";
         }
-        std::cout<<std::endl;
+//        std::cout<<std::endl;
     }
 }
 
@@ -532,7 +536,7 @@ int main(int argc, char** argv)
     loadGridMap(gmapfile);
     std::cout << "End load grid map" <<std::endl<<std::endl;
 
-    std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_c.txt" ;
+    std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt" ;
     loadCostMap(cmapfile);
     std::cout << "End load cost map" <<std::endl<<std::endl;
 
@@ -567,7 +571,12 @@ int main(int argc, char** argv)
     std::cout << "Make global plan" <<std::endl;
     bool bplansuccess = mpo_gph->makePlan(start, goal, global_plan_);
 
-    std::cout << "Global plan size:"<<bplansuccess <<std::endl <<std::endl;
+    if(!bplansuccess){
+        std::cout <<"global plan failed" <<std::endl;
+        return 0;
+    }
+
+    std::cout << "Global plan size:"<<global_plan_.size() <<std::endl <<std::endl;
     // In teb_local_planner_ros -> compute velocity commands
     // 0. Set robot velocity
     // Get robot velocity
@@ -576,7 +585,7 @@ int main(int argc, char** argv)
     vel.y = 0.0;
     vel.z = 0.0 ;
     geometry_msgs::PoseStamped robot_vel_tf = StampedPosefromSE2( vel.x, vel.y, 0.f );
-    start.header.frame_id = m_worldFrameId;
+    start.header.frame_id = m_baseFrameId;
     robot_vel_.linear.x = robot_vel_tf.pose.position.x;
     robot_vel_.linear.y = robot_vel_tf.pose.position.y;
 //    tf2::Quaternion q = tf2::impl::toQuaternion(robot_vel_tf.pose.orientation);
@@ -597,13 +606,13 @@ int main(int argc, char** argv)
     int goal_idx;
     geometry_msgs::TransformStamped tf_plan_to_global;
 
-//    if (!transformGlobalPlan_t(*tf_, global_plan_, robot_pose, *mpo_costmap, global_frame_, cfg_.trajectory.max_global_plan_lookahead_dist,
-//                             transformed_plan, &goal_idx, &tf_plan_to_global))
-//    {
-//        printf("Could not transform the global plan to the frame of the controller");
-//        std::string message = "Could not transform the global plan to the frame of the controller";
-//        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
-//    }
+    if (!transformGlobalPlan_t(*tf_, global_plan_, robot_pose, *mpo_costmap, global_frame_, cfg_.trajectory.max_global_plan_lookahead_dist,
+                             transformed_plan, &goal_idx, &tf_plan_to_global))
+    {
+        printf("Could not transform the global plan to the frame of the controller");
+        std::string message = "Could not transform the global plan to the frame of the controller";
+        return mbf_msgs::ExePathResult::INTERNAL_ERROR;
+    }
 
     // 3. Check goal reached
     geometry_msgs::PoseStamped global_goal;

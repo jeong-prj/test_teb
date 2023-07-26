@@ -587,12 +587,12 @@ namespace navfn {
       p_r = potarr[n+1];
       p_u = potarr[n-nx];
       p_d = potarr[n+nx];
-      //ROS_INFO("[Update] c: %0.1f  l: %0.1f  r: %0.1f  u: %0.1f  d: %0.1f\n", 
-      //	 potarr[n], l, r, u, d);
-      // ROS_INFO("[Update] cost of %d: %d\n", n, costarr[n]);
+//      printf("[Update] c: %0.1f  l: %0.1f  r: %0.1f  u: %0.1f  d: %0.1f\n",
+//      	 potarr[n], p_l, p_r, p_u, p_d);
+//      printf("[Update] cost of %d: %d\n", n, costarr[n]);
 
-//mofs_astarlog << "[update potarray] " << potarr[n] << " " << p_l << " " << p_r << " " << p_u << " " << p_d << std::endl;
-//mofs_astarlog << "[update cost] " << static_cast<uint32_t>(costarr[n]) << std::endl;
+//std::cout << "[update potarray] " << potarr[n] << " " << p_l << " " << p_r << " " << p_u << " " << p_d << std::endl;
+//std::cout << "[update cost] " << static_cast<uint32_t>(costarr[n]) << std::endl;
 
       // find lowest, and its lowest neighbor
       float ta, tc;
@@ -624,9 +624,9 @@ namespace navfn {
           pot = ta + hf*v;
         }
 
-        //ROS_INFO("[Update] new pot: %d\n", costarr[n]);
-//mofs_astarlog << "ta, dc, hf: " << ta << " " << dc << " " << hf << std::endl;
-//mofs_astarlog << "[update] new pot (ta + hf, or ta + hf*v): " << pot << " potarr[n]: " << potarr[n] << std::endl;
+//        printf("[Update] new pot: %d\n", costarr[n]);
+//std::cout << "ta, dc, hf: " << ta << " " << dc << " " << hf << std::endl;
+//std::cout  << "[update] new pot (ta + hf, or ta + hf*v): " << pot << " potarr[n]: " << potarr[n] << std::endl;
         // now add affected neighbors to priority blocks
         if (pot < potarr[n])
         {
@@ -644,7 +644,7 @@ namespace navfn {
           pot += dist;
 
           fminpot = pot ;
-//mofs_astarlog << "[update] pot + dist (f) : " << pot << " curT: " << curT << std::endl;
+//          std::cout << "[update] pot + dist (f) : " << pot << " curT: " << curT << std::endl;
           if (pot < curT)	// low-cost buffer block 
           {
             if (p_l > pot+c_le) push_next(n-1);
@@ -662,7 +662,7 @@ namespace navfn {
         }
         else if( pot > potarr[n] )// by kmhan
         {
-//mofs_astarlog << "pot > potarr[n] case " << pot << " " <<  potarr[n] << std::endl;
+            std::cout << "pot > potarr[n] case " << pot << " " <<  potarr[n] << std::endl;
         }
 
       }
@@ -773,8 +773,7 @@ namespace navfn {
       // do main cycle
       for (; cycle < cycles; cycle++) // go for this many cycles, unless interrupted
       {
-        //
-          std::cout <<"cycle: "<< cycle << " of cycles "<<cycles<<std::endl;
+//          std::cout <<"cycle: "<< cycle << " of cycles "<<cycles<<std::endl;
         if (curPe == 0 && nextPe == 0){// priority blocks empty
             std::cout << curPe << " "<< nextPe <<std::endl;
             break;
@@ -829,7 +828,7 @@ namespace navfn {
         // check if we've hit the Start cell
         if (potarr[startCell] < POT_HIGH){
             std::cout<< potarr[startCell]<<", "<< POT_HIGH<<std::endl;
-            printf("potarr[startCell] < Pot high");
+            printf("potarr[startCell] < Pot high\n");
             break;
         }
 
@@ -1090,10 +1089,10 @@ namespace navfn {
             float y = (1.0 - dy) * y1 + dy * y2; // interpolated y
 
             // show gradients
-            printf("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
-                   gradx[stc], grady[stc], gradx[stc + 1], grady[stc + 1],
-                   gradx[stcnx], grady[stcnx], gradx[stcnx + 1], grady[stcnx + 1],
-                   x, y);
+//            printf("[Path] %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f  %0.2f,%0.2f; final x=%.3f, y=%.3f\n",
+//                   gradx[stc], grady[stc], gradx[stc + 1], grady[stc + 1],
+//                   gradx[stcnx], grady[stcnx], gradx[stcnx + 1], grady[stcnx + 1],
+//                   x, y);
 
             // check for zero gradient, failed
             if (x == 0.0 && y == 0.0) {
@@ -1123,8 +1122,8 @@ namespace navfn {
                 stc -= nx;
                 dy += 1.0;
             }
-            printf("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
-                   potarr[stc], x, y, pathx[npath - 1], pathy[npath - 1]);
+//            printf("[Path] Pot: %0.1f  grad: %0.1f,%0.1f  pos: %0.1f,%0.1f\n",
+//                   potarr[stc], x, y, pathx[npath - 1], pathy[npath - 1]);
         }
       }
 
