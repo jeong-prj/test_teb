@@ -131,6 +131,7 @@ bool pruneGlobalPlan_t(const geometry_msgs::PoseStamped& global_pose, std::vecto
         tf2::Vector3 v = tf2::Vector3(global_pose.pose.position.x, global_pose.pose.position.y, global_pose.pose.position.z);
         tf2::Quaternion r = tf2::Quaternion(global_pose.pose.orientation.x, global_pose.pose.orientation.y, global_pose.pose.orientation.z, global_pose.pose.orientation.w);
 
+        //need to fill t_in
         geometry_msgs::Transform t_in;
         tf2::Transform t_out;
 
@@ -499,6 +500,9 @@ void setCostmap(){
     std::cout << cmresolution << ", "<< cmstartx<< ", " << cmstarty<< ", " << cmwidth<< ", "<< cmheight<< std::endl;
     std::cout <<"cmdata size: "<< cmdata.size() <<std::endl;
 
+    m_robotpose.pose.pose.position.x = cmstartx;
+    m_robotpose.pose.pose.position.y = cmstarty;
+
     if( gmheight == 0 || gmwidth == 0
         || gmwidth  != cmwidth
         || gmheight != cmheight)
@@ -616,7 +620,7 @@ int main(int argc, char** argv)
     vel.y = 0.0;
     vel.z = 0.0 ;
     geometry_msgs::PoseStamped robot_vel_tf = StampedPosefromSE2( vel.x, vel.y, 0.f );
-    start.header.frame_id = m_baseFrameId;
+//    start.header.frame_id = m_baseFrameId;
     robot_vel_.linear.x = robot_vel_tf.pose.position.x;
     robot_vel_.linear.y = robot_vel_tf.pose.position.y;
 //    tf2::Quaternion q = tf2::impl::toQuaternion(robot_vel_tf.pose.orientation);
@@ -626,7 +630,11 @@ int main(int argc, char** argv)
     // 1. teb_local_planner_ros -> prune global plan
     // Get robot pose from start pose
     geometry_msgs::PoseStamped robot_pose;
-    robot_pose = start;
+    robot_pose.pose.position.x = m_robotpose.pose.pose.position.x;
+    robot_pose.pose.position.y = m_robotpose.pose.pose.position.y;
+    robot_pose.pose.position.z = 0.0;
+    robot_pose.pose.orientation.z = 1.0;
+    robot_pose.header.frame_id = m_baseFrameId;
     robot_pose_ = teb_local_planner::PoseSE2(robot_pose.pose);
 
 //    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
