@@ -3,14 +3,18 @@
 //
 #include <opencv2/core/types.hpp>
 #include <opencv2/core/mat.hpp>
+
 #include "teb_local_planner/timed_elastic_band.h"
 #include "teb_local_planner/optimal_planner.h"
 #include "teb_local_planner/recovery_behaviors.h"
+
 #include "global_planning_handler.hpp"
+
 #include "tf2/impl/utils.h"
+
 #include "mbf_msgs/ExePathResult.h"
 #include "costmap_2d/costmap_math.h"
-//#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 // Params
 teb_local_planner::PlannerInterfacePtr planner_; //!< Instance of the underlying optimal planner class
@@ -106,7 +110,8 @@ void initialize_t(){
     //    tf_ = tf2_ros::Buffer();
 }
 
-bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& global_plan, double dist_behind_robot)
+//bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& global_plan, double dist_behind_robot)
+bool pruneGlobalPlan_t(const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& global_plan, double dist_behind_robot)
 {
     if (global_plan.empty())
         return true;
@@ -115,11 +120,37 @@ bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamp
     {
         // transform robot pose into the plan frame (we do not wait here, since pruning not crucial, if missed a few times)
         // Ignore this time
-        geometry_msgs::TransformStamped global_to_plan_transform = tf.lookupTransform(global_plan.front().header.frame_id, global_pose.header.frame_id, ros::Time(0));
-        geometry_msgs::PoseStamped robot;
-        tf2::doTransform(global_pose, robot, global_to_plan_transform);
+        // lookupTransform for setting the transform matrix
+        // Then doTransform for transform
+//        geometry_msgs::TransformStamped global_to_plan_transform = tf.lookupTransform(global_plan.front().header.frame_id, global_pose.header.frame_id, ros::Time(0));
 //        geometry_msgs::PoseStamped robot;
-//        robot = global_pose;
+//        tf2::doTransform(global_pose, robot, global_to_plan_transform);
+
+        // first, find transform matrix
+        geometry_msgs::PoseStamped robot;
+        tf2::Vector3 v = tf2::Vector3(global_pose.pose.position.x, global_pose.pose.position.y, global_pose.pose.position.z);
+        tf2::Quaternion r = tf2::Quaternion(global_pose.pose.orientation.x, global_pose.pose.orientation.y, global_pose.pose.orientation.z, global_pose.pose.orientation.w);
+
+        geometry_msgs::Transform t_in;
+        tf2::Transform t_out;
+
+        tf2::Vector3 t_v = tf2::Vector3(t_in.translation.x, t_in.translation.y, t_in.translation.z);
+        t_out.setOrigin(t_v);
+        // w at the end in the constructor
+        tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
+        t_out.setRotation(t_q);
+
+        // multifly transform matrix and input
+        tf2::Transform v_out = t_out * tf2::Transform(r, v);
+
+//        toMsg(v_out.getOrigin(), robot.pose.position);
+        tf2::Quaternion in_r = v_out.getRotation();
+        geometry_msgs::Quaternion out_r;
+        out_r.w = in_r.getW();
+        out_r.x = in_r.getX();
+        out_r.y = in_r.getY();
+        out_r.z = in_r.getZ();
+        robot.pose.orientation = out_r;
 
         //distance thresh = dist_behind_robot^2
         double dist_thresh_sq = dist_behind_robot*dist_behind_robot;
@@ -598,7 +629,8 @@ int main(int argc, char** argv)
     robot_pose = start;
     robot_pose_ = teb_local_planner::PoseSE2(robot_pose.pose);
 
-    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
+//    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
+    pruneGlobalPlan_t(robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
 
     // 2. Transform global plan
     // Transform global plan to the frame of interest (w.r.t. the local costmap)
