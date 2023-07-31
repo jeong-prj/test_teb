@@ -65,10 +65,10 @@ TebOptimalPlanner::TebOptimalPlanner() : cfg_(NULL), obstacles_(NULL), via_point
 }
   
 //TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
-TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points)
+TebOptimalPlanner::TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points, costmap_2d::Costmap2D* cost_map)
 {
 //  initialize(cfg, obstacles, robot_model, visual, via_points);
-        initialize(cfg, obstacles, robot_model, via_points);
+        initialize(cfg, obstacles, robot_model, via_points, cost_map);
 }
 
 TebOptimalPlanner::~TebOptimalPlanner()
@@ -87,8 +87,9 @@ void TebOptimalPlanner::updateRobotModel(RobotFootprintModelPtr robot_model)
 }
 
 //void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, TebVisualizationPtr visual, const ViaPointContainer* via_points)
-void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points)
+void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacles, RobotFootprintModelPtr robot_model, const ViaPointContainer* via_points, costmap_2d::Costmap2D* cost_map)
 {
+    cost_map_ = cost_map;
   // init optimizer (set solver and block ordering settings)
   optimizer_ = initOptimizer();
   
@@ -1255,6 +1256,141 @@ void TebOptimalPlanner::getFullTrajectory(std::vector<TrajectoryPointMsg>& traje
   goal.time_from_start.fromSec(curr_time);
 }
 
+    bool TebOptimalPlanner::worldToMap(double wx, double wy, unsigned int& mx, unsigned int& my) const
+    {
+
+        if (wx < cost_map_->getOriginX() || wy < cost_map_->getOriginY())
+            return false;
+
+        mx = (int)((wx - cost_map_->getOriginX()) / cost_map_->getResolution());
+        my = (int)((wy - cost_map_->getOriginY()) / cost_map_->getResolution());
+
+        if (mx < cost_map_->getSizeInCellsX() && my < cost_map_->getSizeInCellsX())
+            return true;
+
+        return false;
+    }
+
+    //calculate the cost of a ray-traced line
+    double TebOptimalPlanner::lineCost(int x0, int x1, int y0, int y1) const {
+        double line_cost = 0.0;
+        double point_cost = -1.0;
+
+        for( base_local_planner::LineIterator line( x0, y0, x1, y1 ); line.isValid(); line.advance() )
+        {
+            point_cost = pointCost( line.getX(), line.getY() ); //Score the current point
+
+            if(point_cost < 0)
+                return point_cost;
+
+            if(line_cost < point_cost)
+                line_cost = point_cost;
+        }
+
+        return line_cost;
+    }
+
+    double TebOptimalPlanner::pointCost(int x, int y) const {
+        unsigned char cost = cost_map_->getCost(x, y);
+        //if the cell is in an obstacle the path is invalid
+        if(cost == NO_INFORMATION)
+            return -2;
+        if(cost == LETHAL_OBSTACLE)
+            return -1;
+
+        return cost;
+    }
+
+    double TebOptimalPlanner::footprintCost_c(const geometry_msgs::Point& position, const std::vector<geometry_msgs::Point>& footprint,
+                           double inscribed_radius, double circumscribed_radius){
+        // returns:
+        //  -1 if footprint covers at least a lethal obstacle cell, or
+        //  -2 if footprint covers at least a no-information cell, or
+        //  -3 if footprint is [partially] outside of the map, or
+        //  a positive value for traversable space
+
+        //used to put things into grid coordinates
+        unsigned int cell_x, cell_y;
+
+        //get the cell coord of the center point of the robot
+        if(!worldToMap(position.x, position.y, cell_x, cell_y))
+            return -3.0;
+
+        //if number of points in the footprint is less than 3, we'll just assume a circular robot
+        if(footprint.size() < 3){
+            unsigned char cost = cost_map_->getCost(cell_x, cell_y);
+            if(cost == NO_INFORMATION)
+                return -2.0;
+            if(cost == LETHAL_OBSTACLE || cost == INSCRIBED_INFLATED_OBSTACLE)
+                return -1.0;
+            return cost;
+        }
+
+        //now we really have to lay down the footprint in the costmap grid
+        unsigned int x0, x1, y0, y1;
+        double line_cost = 0.0;
+        double footprint_cost = 0.0;
+
+        //we need to rasterize each line in the footprint
+        for(unsigned int i = 0; i < footprint.size() - 1; ++i){
+            //get the cell coord of the first point
+            if(!worldToMap(footprint[i].x, footprint[i].y, x0, y0))
+                return -3.0;
+
+            //get the cell coord of the second point
+            if(!worldToMap(footprint[i + 1].x, footprint[i + 1].y, x1, y1))
+                return -3.0;
+
+            line_cost = lineCost(x0, x1, y0, y1);
+            footprint_cost = std::max(line_cost, footprint_cost);
+
+            //if there is an obstacle that hits the line... we know that we can return false right away
+            if(line_cost < 0)
+                return line_cost;
+        }
+
+        //we also need to connect the first point in the footprint to the last point
+        //get the cell coord of the last point
+        if(!worldToMap(footprint.back().x, footprint.back().y, x0, y0))
+            return -3.0;
+
+        //get the cell coord of the first point
+        if(!worldToMap(footprint.front().x, footprint.front().y, x1, y1))
+            return -3.0;
+
+        line_cost = lineCost(x0, x1, y0, y1);
+        footprint_cost = std::max(line_cost, footprint_cost);
+
+        if(line_cost < 0)
+            return line_cost;
+
+        //if all line costs are legal... then we can return that the footprint is legal
+        return footprint_cost;
+
+    }
+
+    double TebOptimalPlanner::footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point>& footprint_spec, double inscribed_radius = 0.0, double circumscribed_radius=0.0){
+
+        double cos_th = cos(theta);
+        double sin_th = sin(theta);
+        std::vector<geometry_msgs::Point> oriented_footprint;
+        for(unsigned int i = 0; i < footprint_spec.size(); ++i){
+            geometry_msgs::Point new_pt;
+            new_pt.x = x + (footprint_spec[i].x * cos_th - footprint_spec[i].y * sin_th);
+            new_pt.y = y + (footprint_spec[i].x * sin_th + footprint_spec[i].y * cos_th);
+            oriented_footprint.push_back(new_pt);
+        }
+
+        geometry_msgs::Point robot_position;
+        robot_position.x = x;
+        robot_position.y = y;
+
+        if(inscribed_radius==0.0){
+            costmap_2d::calculateMinAndMaxDistances(footprint_spec, inscribed_radius, circumscribed_radius);
+        }
+
+        return footprintCost_c(robot_position, oriented_footprint, inscribed_radius, circumscribed_radius);
+    }
 
 bool TebOptimalPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel* costmap_model, const std::vector<geometry_msgs::Point>& footprint_spec,
                                              double inscribed_radius, double circumscribed_radius, int look_ahead_idx)
@@ -1264,7 +1400,7 @@ bool TebOptimalPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel* c
   
   for (int i=0; i <= look_ahead_idx; ++i)
   {           
-    if ( costmap_model->footprintCost(teb().Pose(i).x(), teb().Pose(i).y(), teb().Pose(i).theta(), footprint_spec, inscribed_radius, circumscribed_radius) == -1 )
+    if ( footprintCost(teb().Pose(i).x(), teb().Pose(i).y(), teb().Pose(i).theta(), footprint_spec, inscribed_radius, circumscribed_radius) == -1 )
     {
 //      if (visualization_)
 //      {
@@ -1290,7 +1426,7 @@ bool TebOptimalPlanner::isTrajectoryFeasible(base_local_planner::CostmapModel* c
           intermediate_pose.position() = intermediate_pose.position() + delta_dist / (n_additional_samples + 1.0);
           intermediate_pose.theta() = g2o::normalize_theta(intermediate_pose.theta() + 
                                                            delta_rot / (n_additional_samples + 1.0));
-          if ( costmap_model->footprintCost(intermediate_pose.x(), intermediate_pose.y(), intermediate_pose.theta(),
+          if ( footprintCost(intermediate_pose.x(), intermediate_pose.y(), intermediate_pose.theta(),
             footprint_spec, inscribed_radius, circumscribed_radius) == -1 )
           {
 //            if (visualization_)

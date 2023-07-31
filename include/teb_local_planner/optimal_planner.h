@@ -68,6 +68,8 @@
 #include <nav_msgs/Odometry.h>
 #include <limits.h>
 
+#include <base_local_planner/line_iterator.h>
+
 namespace teb_local_planner
 {
 
@@ -117,7 +119,7 @@ public:
 //  TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
 //                    TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
     TebOptimalPlanner(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
-                       const ViaPointContainer* via_points = NULL);
+                       const ViaPointContainer* via_points = NULL, costmap_2d::Costmap2D* cost_map = NULL);
   /**
    * @brief Destruct the optimal planner.
    */
@@ -134,7 +136,7 @@ public:
 //  void initialize(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
 //                  TebVisualizationPtr visual = TebVisualizationPtr(), const ViaPointContainer* via_points = NULL);
     void initialize(const TebConfig& cfg, ObstContainer* obstacles = NULL, RobotFootprintModelPtr robot_model = boost::make_shared<PointRobotFootprint>(),
-                    const ViaPointContainer* via_points = NULL);
+                    const ViaPointContainer* via_points = NULL, costmap_2d::Costmap2D* cost_map = NULL);
   /**
     * @param robot_model Shared pointer to the robot shape model used for optimization (optional)
     */
@@ -681,6 +683,10 @@ protected:
     
 
   // external objects (store weak pointers)
+
+
+
+  costmap_2d::Costmap2D* cost_map_;
   const TebConfig* cfg_; //!< Config class that stores and manages all related parameters
   ObstContainer* obstacles_; //!< Store obstacles that are relevant for planning
   const ViaPointContainer* via_points_; //!< Store via points for planning
@@ -699,10 +705,27 @@ protected:
 
   bool initialized_; //!< Keeps track about the correct initialization of this class
   bool optimized_; //!< This variable is \c true as long as the last optimization has been completed successful
+
+        static const unsigned char NO_INFORMATION = 255;
+        static const unsigned char LETHAL_OBSTACLE = 254;
+        static const unsigned char INSCRIBED_INFLATED_OBSTACLE = 253;
+        static const unsigned char FREE_SPACE = 0;
   
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW    
-};
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+        bool worldToMap(double wx, double wy, unsigned int &mx, unsigned int &my) const;
+
+        double footprintCost_c(const geometry_msgs::Point &position, const std::vector<geometry_msgs::Point> &footprint,
+                               double inscribed_radius, double circumscribed_radius);
+
+        double footprintCost(double x, double y, double theta, const std::vector<geometry_msgs::Point> &footprint_spec,
+                             double inscribed_radius, double circumscribed_radius);
+
+        double lineCost(int x0, int x1, int y0, int y1) const;
+
+        double pointCost(int x, int y) const;
+    };
 
 //! Abbrev. for shared instances of the TebOptimalPlanner
 typedef boost::shared_ptr<TebOptimalPlanner> TebOptimalPlannerPtr;

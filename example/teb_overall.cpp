@@ -100,14 +100,49 @@ void padFootprint_t(std::vector<geometry_msgs::Point>& footprint, double padding
         geometry_msgs::Point& pt = footprint[ i ];
         pt.x += sign0(pt.x) * padding;
         pt.y += sign0(pt.y) * padding;
+
+        std::cout << pt.x << ", " << pt.y << std::endl;
     }
 }
 
 void initialize_t(){
     teb_local_planner::RobotFootprintModelPtr robot_model = boost::make_shared<teb_local_planner::PointRobotFootprint>();
-    planner_ = teb_local_planner::PlannerInterfacePtr(new teb_local_planner::TebOptimalPlanner(cfg_, &obstacles_, robot_model, &via_points_));
+    planner_ = teb_local_planner::PlannerInterfacePtr(new teb_local_planner::TebOptimalPlanner(cfg_, &obstacles_, robot_model, &via_points_, mpo_costmap));
     //need to tf initialize
     //    tf_ = tf2_ros::Buffer();
+}
+
+void transform_t(geometry_msgs::PoseStamped data_in, geometry_msgs::PoseStamped& data_out){
+    tf2::Vector3 v = tf2::Vector3(data_in.pose.position.x, data_in.pose.position.y, data_in.pose.position.z);
+    tf2::Quaternion r = tf2::Quaternion(data_in.pose.orientation.x, data_in.pose.orientation.y, data_in.pose.orientation.z, data_in.pose.orientation.w);
+
+    //need to fill t_in
+//        geometry_msgs::Transform t_in;
+    tf2::Transform t_out;
+
+//        tf2::Vector3 t_v = tf2::Vector3(t_in.translation.x, t_in.translation.y, t_in.translation.z);
+    tf2::Vector3 t_v = tf2::Vector3(m_gridmap.info.origin.position.x, m_gridmap.info.origin.position.y, 0);
+    t_out.setOrigin(t_v);
+
+    // w at the end in the constructor
+//      tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
+    tf2::Quaternion t_q = tf2::Quaternion(0, 0, 0, 1);
+    t_out.setRotation(t_q);
+
+    // multifly transform matrix and input
+    tf2::Transform v_out = t_out * tf2::Transform(r, v);
+    data_out.pose.position.x = t_out.getOrigin().getX();
+    data_out.pose.position.y = t_out.getOrigin().getY();
+    data_out.pose.position.z = t_out.getOrigin().getZ();
+
+//        toMsg(v_out.getOrigin(), robot.pose.position);
+    tf2::Quaternion in_r = v_out.getRotation();
+    geometry_msgs::Quaternion out_r;
+    out_r.w = in_r.getW();
+    out_r.x = in_r.getX();
+    out_r.y = in_r.getY();
+    out_r.z = in_r.getZ();
+    data_out.pose.orientation = out_r;
 }
 
 //bool pruneGlobalPlan_t(const tf2_ros::Buffer& tf, const geometry_msgs::PoseStamped& global_pose, std::vector<geometry_msgs::PoseStamped>& global_plan, double dist_behind_robot)
@@ -126,19 +161,24 @@ bool pruneGlobalPlan_t(const geometry_msgs::PoseStamped& global_pose, std::vecto
 //        geometry_msgs::PoseStamped robot;
 //        tf2::doTransform(global_pose, robot, global_to_plan_transform);
 
+
         // first, find transform matrix
         geometry_msgs::PoseStamped robot;
-        tf2::Vector3 v = tf2::Vector3(global_pose.pose.position.x, global_pose.pose.position.y, global_pose.pose.position.z);
+        transform_t(global_pose, robot);
+/*        tf2::Vector3 v = tf2::Vector3(global_pose.pose.position.x, global_pose.pose.position.y, global_pose.pose.position.z);
         tf2::Quaternion r = tf2::Quaternion(global_pose.pose.orientation.x, global_pose.pose.orientation.y, global_pose.pose.orientation.z, global_pose.pose.orientation.w);
 
         //need to fill t_in
-        geometry_msgs::Transform t_in;
+//        geometry_msgs::Transform t_in;
         tf2::Transform t_out;
 
-        tf2::Vector3 t_v = tf2::Vector3(t_in.translation.x, t_in.translation.y, t_in.translation.z);
+//        tf2::Vector3 t_v = tf2::Vector3(t_in.translation.x, t_in.translation.y, t_in.translation.z);
+        tf2::Vector3 t_v = tf2::Vector3(m_gridmap.info.origin.position.x, m_gridmap.info.origin.position.y, 0);
         t_out.setOrigin(t_v);
+
         // w at the end in the constructor
-        tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
+//      tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
+        tf2::Quaternion t_q = tf2::Quaternion(0, 0, 0, 1);
         t_out.setRotation(t_q);
 
         // multifly transform matrix and input
@@ -151,7 +191,7 @@ bool pruneGlobalPlan_t(const geometry_msgs::PoseStamped& global_pose, std::vecto
         out_r.x = in_r.getX();
         out_r.y = in_r.getY();
         out_r.z = in_r.getZ();
-        robot.pose.orientation = out_r;
+        robot.pose.orientation = out_r;*/
 
         //distance thresh = dist_behind_robot^2
         double dist_thresh_sq = dist_behind_robot*dist_behind_robot;
@@ -204,16 +244,17 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
 
         //err
         // get plan_to_global_transform from plan frame to global_frame
-        geometry_msgs::TransformStamped plan_to_global_transform = tf.lookupTransform(global_frame, ros::Time(),
-                                                                                      plan_pose.header.frame_id,
-                                                                                      plan_pose.header.stamp,
-                                                                                      plan_pose.header.frame_id,
-                                                                                      ros::Duration(
-                                                                                              cfg_.robot.transform_tolerance));
+//        geometry_msgs::TransformStamped plan_to_global_transform = tf.lookupTransform(global_frame, ros::Time(),
+//                                                                                      plan_pose.header.frame_id,
+//                                                                                      plan_pose.header.stamp,
+//                                                                                      plan_pose.header.frame_id,
+//                                                                                      ros::Duration(
+//                                                                                              cfg_.robot.transform_tolerance));
 
         //let's get the pose of the robot in the frame of the plan
         geometry_msgs::PoseStamped robot_pose;
-        tf.transform(global_pose, robot_pose, plan_pose.header.frame_id);
+        transform_t(global_pose, robot_pose);
+//        tf.transform(global_pose, robot_pose, plan_pose.header.frame_id);
 
         //we'll discard points on the plan that are outside the local costmap
         double dist_threshold = std::max(costmap.getSizeInCellsX() * costmap.getResolution() / 2.0,
@@ -253,7 +294,8 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         while (i < (int) global_plan.size() && sq_dist <= sq_dist_threshold &&
                (max_plan_length <= 0 || plan_length <= max_plan_length)) {
             const geometry_msgs::PoseStamped &pose = global_plan[i];
-            tf2::doTransform(pose, newer_pose, plan_to_global_transform);
+            transform_t(pose, newer_pose);
+//            tf2::doTransform(pose, newer_pose, plan_to_global_transform);
 
             transformed_plan.push_back(newer_pose);
 
@@ -272,7 +314,9 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         // if we are really close to the goal (<sq_dist_threshold) and the goal is not yet reached (e.g. orientation error >>0)
         // the resulting transformed plan can be empty. In that case we explicitly inject the global goal.
         if (transformed_plan.empty()) {
-            tf2::doTransform(global_plan.back(), newer_pose, plan_to_global_transform);
+
+            transform_t(global_plan.back(), newer_pose);
+//            tf2::doTransform(global_plan.back(), newer_pose, plan_to_global_transform);
 
             transformed_plan.push_back(newer_pose);
 
@@ -285,7 +329,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         }
 
         // Return the transformation from the global plan to the global planning frame if desired
-        if (tf_plan_to_global) *tf_plan_to_global = plan_to_global_transform;
+//        if (tf_plan_to_global) *tf_plan_to_global = plan_to_global_transform;
     }
     catch (tf::LookupException &ex) {
         printf("No Transform available Error: %s\n", ex.what());
@@ -565,7 +609,6 @@ void setCostmap(){
 int main(int argc, char** argv)
 {
     printf("start\n");
-    initialize_t();
 
     std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt" ;
     loadGridMap(gmapfile);
@@ -584,6 +627,8 @@ int main(int argc, char** argv)
     std::cout << "global handler - reinitialize" <<std::endl;
     mpo_gph->reinitialization( mpo_costmap ) ;
     std::cout << "Reinitialize mpo_costmap" <<std::endl<<std::endl;
+
+    initialize_t();
 
     //  Set start position
     std::cout << "Set start position" <<std::endl;
@@ -656,7 +701,8 @@ int main(int argc, char** argv)
 
     // 3. Check goal reached
     geometry_msgs::PoseStamped global_goal;
-    tf2::doTransform(global_plan_.back(), global_goal, tf_plan_to_global);
+//    tf2::doTransform(global_plan_.back(), global_goal, tf_plan_to_global);
+    transform_t(global_plan_.back(), global_goal);
     double dx = global_goal.pose.position.x - robot_pose_.x();
     double dy = global_goal.pose.position.y - robot_pose_.y();
 //    tf2::Quaternion q_tmp = tf2::impl::toQuaternion(global_goal.pose.orientation);
@@ -751,6 +797,21 @@ int main(int argc, char** argv)
 //        footprint_spec_ = costmap_ros_->getRobotFootprint();
 //        costmap_2d::calculateMinAndMaxDistances(footprint_spec_, robot_inscribed_radius_, robot_circumscribed_radius);
 //    }
+
+    std::vector<geometry_msgs::Point> points;
+
+    // Loop over 16 angles around a circle making a point each time
+    int N = 16;
+    geometry_msgs::Point pt;
+    for (int i = 0; i < N; ++i)
+    {
+        double angle = i * 2 * M_PI / N;
+        pt.x = cos(angle) * 0.1;
+        pt.y = sin(angle) * 0.1;
+
+        points.push_back(pt);
+    }
+    footprint_spec_ = points;
 
     padFootprint_t(footprint_spec_, robot_inscribed_radius_);
     costmap_2d::calculateMinAndMaxDistances(footprint_spec_, robot_inscribed_radius_, robot_circumscribed_radius);
