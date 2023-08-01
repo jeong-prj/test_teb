@@ -776,18 +776,21 @@ int main(int argc, char** argv)
     }
 
     // Check for divergence
-    if (planner_->hasDiverged())
-    {
+    bool diverged = planner_->hasDiverged();
+    if (diverged) {
         cmd_vel.twist.linear.x = cmd_vel.twist.linear.y = cmd_vel.twist.angular.z = 0;
 
         // Reset everything to start again with the initialization of new trajectories.
         planner_->clearPlanner();
-        printf("TebLocalPlannerROS: the trajectory has diverged. Resetting planner...");
+        printf("TebLocalPlannerROS: the trajectory has diverged. Resetting planner...\n");
 
         ++no_infeasible_plans_; // increase number of infeasible solutions in a row
 //        time_last_infeasible_plan_ = ros::Time::now();
         last_cmd_ = cmd_vel.twist;
         return mbf_msgs::ExePathResult::NO_VALID_CMD;
+    }
+    else{
+        printf("TebLocalPlannerROS: the trajectory has not diverged. Continue planner...\n");
     }
 
     // Check feasibility (but within the first few states only)
@@ -817,8 +820,8 @@ int main(int argc, char** argv)
     costmap_2d::calculateMinAndMaxDistances(footprint_spec_, robot_inscribed_radius_, robot_circumscribed_radius);
 
     bool feasible = planner_->isTrajectoryFeasible(costmap_model_.get(), footprint_spec_, robot_inscribed_radius_, robot_circumscribed_radius, cfg_.trajectory.feasibility_check_no_poses);
-    if (!feasible)
-    {
+
+    if (!feasible) {
         cmd_vel.twist.linear.x = cmd_vel.twist.linear.y = cmd_vel.twist.angular.z = 0;
 
         // now we reset everything to start again with the initialization of new trajectories.
@@ -831,11 +834,12 @@ int main(int argc, char** argv)
         printf("teb_local_planner trajectory is not feasible");
         return mbf_msgs::ExePathResult::NO_VALID_CMD;
     }
+    else{
+        std::cout << "Trajectory feasible\n" ;
+    }
 
     // Get the velocity command for this sampling interval
-    if (!planner_->getVelocityCommand(cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z, cfg_.trajectory.control_look_ahead_poses))
-
-    {
+    if (!planner_->getVelocityCommand(cmd_vel.twist.linear.x, cmd_vel.twist.linear.y, cmd_vel.twist.angular.z, cfg_.trajectory.control_look_ahead_poses)) {
         planner_->clearPlanner();
         printf("TebLocalPlannerROS: velocity command invalid. Resetting planner...");
         ++no_infeasible_plans_; // increase number of infeasible solutions in a row
@@ -850,10 +854,11 @@ int main(int argc, char** argv)
                      cfg_.robot.max_vel_x, cfg_.robot.max_vel_y, cfg_.robot.max_vel_trans, cfg_.robot.max_vel_theta,
                      cfg_.robot.max_vel_x_backwards);
 
+    std::cout <<"X: "<< cmd_vel.twist.linear.x<<", Y: "<<  cmd_vel.twist.linear.y <<", Z: "<< cmd_vel.twist.angular.z<< std::endl;
     // convert rot-vel to steering angle if desired (carlike robot).
     // The min_turning_radius is allowed to be slighly smaller since it is a soft-constraint
     // and opposed to the other constraints not affected by penalty_epsilon. The user might add a safety margin to the parameter itself.
-    if (cfg_.robot.cmd_angle_instead_rotvel)
+    if (cfg_.robot.cmd_angle_instead_rotvel) // cfg_.robot.cmd_angle_instead_rotvel = false
     {
         cmd_vel.twist.angular.z = convertTransRotVelToSteeringAngle_t(cmd_vel.twist.linear.x, cmd_vel.twist.angular.z,
                                                                     cfg_.robot.wheelbase, 0.95*cfg_.robot.min_turning_radius);

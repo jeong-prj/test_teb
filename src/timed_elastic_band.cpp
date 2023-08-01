@@ -72,7 +72,7 @@ TimedElasticBand::TimedElasticBand()
 
 TimedElasticBand::~TimedElasticBand()
 {
-  printf("Destructor Timed_Elastic_Band...");
+  printf("Destructor Timed_Elastic_Band...\n");
   clearTimedElasticBand();
 }
 
@@ -101,7 +101,8 @@ void TimedElasticBand::addPose(const Eigen::Ref<const Eigen::Vector2d>& position
  //add time diff
 void TimedElasticBand::addTimeDiff(double dt, bool fixed)
 {
-  ROS_ASSERT_MSG(dt > 0., "Adding a timediff requires a positive dt");
+    if(dt > 0.) printf("Adding a timediff requires a positive dt\n");
+//  ROS_ASSERT_MSG(dt > 0., "Adding a timediff requires a positive dt");
   VertexTimeDiff* timediff_vertex = new VertexTimeDiff(dt, fixed);
   timediff_vec_.push_back( timediff_vertex );
   return;
@@ -116,7 +117,7 @@ void TimedElasticBand::addPoseAndTimeDiff(double x, double y, double angle, doub
     addTimeDiff(dt,false);
   }
   else 
-    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf");
+    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf\n");
   return;
 }
 
@@ -127,7 +128,7 @@ void TimedElasticBand::addPoseAndTimeDiff(const PoseSE2& pose, double dt)
     addPose(pose,false);
     addTimeDiff(dt,false);
   } else
-    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf");
+    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf\n");
   return;
 }
 
@@ -138,7 +139,7 @@ void TimedElasticBand::addPoseAndTimeDiff(const Eigen::Ref<const Eigen::Vector2d
     addPose(position, theta,false);
     addTimeDiff(dt,false);
   } else 
-    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf");
+    printf("Method addPoseAndTimeDiff: Add one single Pose first. Timediff describes the time difference between last conf and given conf\n");
   return;
 }
 
@@ -372,7 +373,7 @@ bool TimedElasticBand::initTrajectoryToGoal(const PoseSE2& start, const PoseSE2&
     // if number of samples is not larger than min_samples, insert manually
     if ( sizePoses() < min_samples-1 )
     {
-      printf("initTEBtoGoal(): number of generated samples is less than specified by min_samples. Forcing the insertion of more samples...");
+      printf("initTEBtoGoal(): number of generated samples is less than specified by min_samples. Forcing the insertion of more samples...\n");
       while (sizePoses() < min_samples-1) // subtract goal point that will be added later
       {
         // simple strategy: interpolate between the current pose and the goal
@@ -389,8 +390,8 @@ bool TimedElasticBand::initTrajectoryToGoal(const PoseSE2& start, const PoseSE2&
   }
   else // size!=0
   {
-    printf("Cannot init TEB between given configuration and goal, because TEB vectors are not empty or TEB is already initialized (call this function before adding states yourself)!");
-    printf("Number of TEB configurations: %d, Number of TEB timediffs: %d",(unsigned int) sizePoses(),(unsigned int) sizeTimeDiffs());
+    printf("Cannot init TEB between given configuration and goal, because TEB vectors are not empty or TEB is already initialized (call this function before adding states yourself)!\n");
+    printf("Number of TEB configurations: %d, Number of TEB timediffs: %d\n",(unsigned int) sizePoses(),(unsigned int) sizeTimeDiffs());
     return false;
   }
   return true;
@@ -437,7 +438,7 @@ bool TimedElasticBand::initTrajectoryToGoal(const std::vector<geometry_msgs::Pos
     // if number of samples is not larger than min_samples, insert manually
     if ( sizePoses() < min_samples-1 )
     {
-      printf("initTEBtoGoal(): number of generated samples is less than specified by min_samples. Forcing the insertion of more samples...");
+      printf("initTEBtoGoal(): number of generated samples is less than specified by min_samples. Forcing the insertion of more samples...\n");
       while (sizePoses() < min_samples-1) // subtract goal point that will be added later
       {
         // simple strategy: interpolate between the current pose and the goal
@@ -454,8 +455,8 @@ bool TimedElasticBand::initTrajectoryToGoal(const std::vector<geometry_msgs::Pos
   }
   else // size!=0
   {
-    printf("Cannot init TEB between given configuration and goal, because TEB vectors are not empty or TEB is already initialized (call this function before adding states yourself)!");
-    printf("Number of TEB configurations: %d, Number of TEB timediffs: %d", sizePoses(), sizeTimeDiffs());
+    printf("Cannot init TEB between given configuration and goal, because TEB vectors are not empty or TEB is already initialized (call this function before adding states yourself)!\n");
+    printf("Number of TEB configurations: %d, Number of TEB timediffs: %d\n", sizePoses(), sizeTimeDiffs());
     return false;
   }
   
@@ -624,14 +625,14 @@ bool TimedElasticBand::isTrajectoryInsideRegion(double radius, double max_dist_b
         
         if (dist_sq > radius_sq)
         {
-            printf("outside robot");
+            printf("outside robot\n");
             return false;
         }
         
         // check behind the robot with a different distance, if specified (or >=0)
         if (max_dist_behind_robot >= 0 && dist_vec.dot(robot_orient) < 0 && dist_sq > max_dist_behind_robot_sq)
         {
-            printf("outside robot behind");
+            printf("outside robot behind\n");
             return false;
         }
     }
