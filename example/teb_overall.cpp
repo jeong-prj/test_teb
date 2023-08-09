@@ -131,9 +131,9 @@ void transform_t(geometry_msgs::PoseStamped data_in, geometry_msgs::PoseStamped&
 
     // multifly transform matrix and input
     tf2::Transform v_out = t_out * tf2::Transform(r, v);
-    data_out.pose.position.x = t_out.getOrigin().getX();
-    data_out.pose.position.y = t_out.getOrigin().getY();
-    data_out.pose.position.z = t_out.getOrigin().getZ();
+    data_out.pose.position.x = v_out.getOrigin().getX();
+    data_out.pose.position.y = v_out.getOrigin().getY();
+    data_out.pose.position.z = v_out.getOrigin().getZ();
 
 //        toMsg(v_out.getOrigin(), robot.pose.position);
     tf2::Quaternion in_r = v_out.getRotation();
@@ -262,7 +262,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         dist_threshold *= 0.85; // just consider 85% of the costmap size to better incorporate point obstacle that are
         // located on the border of the local costmap
 
-
+        std::cout <<"dist_threshold: "<<dist_threshold << std::endl;
         int i = 0;
         double sq_dist_threshold = dist_threshold * dist_threshold;
         double sq_dist = 1e10;
@@ -270,8 +270,10 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         //we need to loop to a point on the plan that is within a certain distance of the robot
         bool robot_reached = false;
         for (int j = 0; j < (int) global_plan.size(); ++j) {
-            double x_diff = robot_pose.pose.position.x - global_plan[j].pose.position.x;
-            double y_diff = robot_pose.pose.position.y - global_plan[j].pose.position.y;
+//            double x_diff = robot_pose.pose.position.x - global_plan[j].pose.position.x;
+//            double y_diff = robot_pose.pose.position.y - global_plan[j].pose.position.y;
+            double x_diff = 0.0- global_plan[j].pose.position.x;
+            double y_diff = 0.0 - global_plan[j].pose.position.y;
             double new_sq_dist = x_diff * x_diff + y_diff * y_diff;
 
             if (robot_reached && new_sq_dist > sq_dist)
