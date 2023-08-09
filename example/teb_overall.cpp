@@ -101,7 +101,7 @@ void padFootprint_t(std::vector<geometry_msgs::Point>& footprint, double padding
         pt.x += sign0(pt.x) * padding;
         pt.y += sign0(pt.y) * padding;
 
-        std::cout << pt.x << ", " << pt.y << std::endl;
+//        std::cout << pt.x << ", " << pt.y << std::endl;
     }
 }
 
@@ -297,6 +297,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
             transform_t(pose, newer_pose);
 //            tf2::doTransform(pose, newer_pose, plan_to_global_transform);
 
+            std::cout << i <<" pose: "<< newer_pose <<std::endl;
             transformed_plan.push_back(newer_pose);
 
             double x_diff = robot_pose.pose.position.x - global_plan[i].pose.position.x;
@@ -447,7 +448,7 @@ double convertTransRotVelToSteeringAngle_t(double v, double omega, double wheelb
 
 void loadGridMap( const std::string& gridmapfile)
 {
-    std::cout << "start load grid map "<<std::endl;
+//    std::cout << "start load grid map "<<std::endl;
     autoexplorer::ifstream ifs_map( gridmapfile );
     int nheight ;
     int nwidth ;
@@ -456,13 +457,13 @@ void loadGridMap( const std::string& gridmapfile)
     float origy ;
     float resolution ;
     ifs_map >> nwidth >> nheight  >> origx >> origy >> resolution;
-    std::cout << nwidth<< ", " << nheight<< ", "<< origx<< ", "<< origy<< ", "<< resolution <<std::endl;
+    std::cout << "width: "<<nwidth<< ", height: " << nheight<< ", origin X: "<< origx<< ", origin Y: "<< origy<< ", res: "<< resolution <<std::endl;
     m_gridmap.info.height = nheight ;
     m_gridmap.info.width  = nwidth ;
     m_gridmap.info.origin.position.x = origx ;
     m_gridmap.info.origin.position.y = origy ;
     m_gridmap.info.resolution = resolution ;
-    std::cout << "Gridmap data? ok?" <<std::endl;
+//    std::cout << "Gridmap data? ok?" <<std::endl;
     for( int ridx=0; ridx < nheight; ridx++ )
     {
         for( int cidx=0; cidx < nwidth; cidx++ )
@@ -478,7 +479,7 @@ void loadGridMap( const std::string& gridmapfile)
 
 void loadCostMap( const std::string& costmapfile)
 {
-    std::cout << "start load cost map "<<std::endl;
+//    std::cout << "start load cost map "<<std::endl;
     autoexplorer::ifstream ifs_map( costmapfile );
     int nheight ;
     int nwidth ;
@@ -492,9 +493,9 @@ void loadCostMap( const std::string& costmapfile)
     m_globalcostmap.info.origin.position.x = origx ;
     m_globalcostmap.info.origin.position.y = origy ;
     m_globalcostmap.info.resolution = res ;
-    std::cout << m_globalcostmap.info.height << ", "<< m_globalcostmap.info.width<< ", "
-    << m_globalcostmap.info.origin.position.x<< ", " << m_globalcostmap.info.origin.position.y<< ", "<< m_globalcostmap.info.resolution<< std::endl;
-    std::cout << "costmap data? ok?" <<std::endl;
+    std::cout << "height:  "<<m_globalcostmap.info.height << ", width: "<< m_globalcostmap.info.width<< ", origin X: "
+    << m_globalcostmap.info.origin.position.x<< ", origin Y: " << m_globalcostmap.info.origin.position.y<< ", res: "<< m_globalcostmap.info.resolution<< std::endl;
+//    std::cout << "costmap data? ok?" <<std::endl;
     for( int ridx=0; ridx < nheight; ridx++ )
     {
         for( int cidx=0; cidx < nwidth; cidx++ )
@@ -521,7 +522,7 @@ geometry_msgs::PoseStamped GetCurrPose ( )
 }
 
 void setCostmap(){
-    std::cout << "Start set cost map 2d" <<std::endl;
+//    std::cout << "Start set cost map 2d" <<std::endl;
     float gmresolution ;
     uint32_t gmheight, gmwidth;
 
@@ -541,7 +542,7 @@ void setCostmap(){
     cmwidth =globalcostmap.info.width;
     cmheight=globalcostmap.info.height;
     cmdata  =globalcostmap.data;
-    std::cout << cmresolution << ", "<< cmstartx<< ", " << cmstarty<< ", " << cmwidth<< ", "<< cmheight<< std::endl;
+    std::cout << "res: "<<cmresolution << ", start X: "<< cmstartx<< ", start Y: " << cmstarty<< ", width: " << cmwidth<< ", height: "<< cmheight<< std::endl;
     std::cout <<"cmdata size: "<< cmdata.size() <<std::endl;
 
     m_robotpose.pose.pose.position.x = cmstartx;
@@ -572,8 +573,6 @@ void setCostmap(){
 //ROS_INFO("mpo_costmap has been reset \n");
     unsigned char* pmap = mpo_costmap->getCharMap() ;
 //    printf("w h datlen : %d %d %d \n", cmwidth, cmheight, cmdata.size() );
-    std::cout<< "pmap?"<< *pmap <<std::endl;
-
     if (mp_cost_translation_table == NULL)
     {
         mp_cost_translation_table = new uint8_t[101];
@@ -608,18 +607,22 @@ void setCostmap(){
 
 int main(int argc, char** argv)
 {
-    printf("start\n");
+    printf("Start\n");
+
+    std::cout <<"***"<<std::endl;
 
     std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt" ;
+    std::cout << "Load grid map" << gmapfile <<std::endl;
     loadGridMap(gmapfile);
-    std::cout << "End load grid map" <<std::endl<<std::endl;
 
     std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt" ;
+    std::cout << "Load cost map" << cmapfile <<std::endl;
     loadCostMap(cmapfile);
-    std::cout << "End load cost map" <<std::endl<<std::endl;
 
+    std::cout << "Set cost map 2d" <<std::endl;
     setCostmap();
-    std::cout << "End set cost map 2d" <<std::endl<<std::endl;
+
+    std::cout <<"***"<<std::endl;
 
     // Make Global plan before local planner
     std::cout << "new global handler" <<std::endl;
@@ -628,25 +631,30 @@ int main(int argc, char** argv)
     mpo_gph->reinitialization( mpo_costmap ) ;
     std::cout << "Reinitialize mpo_costmap" <<std::endl<<std::endl;
 
+    std::cout <<"***"<<std::endl;
+
+    std::cout << "Initialize teb" <<std::endl;
     initialize_t();
 
     //  Set start position
     std::cout << "Set start position" <<std::endl;
     geometry_msgs::Point p;
-    p.x = 0.0;
-    p.y = 0.0;
+    p.x = 1.0;
+    p.y = 1.0;
     p.z = 0.0 ;
     geometry_msgs::PoseStamped start = StampedPosefromSE2( p.x, p.y, 0.f );
     start.header.frame_id = m_worldFrameId;
 
     //  Set goal position
     std::cout << "Set goal position" <<std::endl;
-    p.x = -2.0;
+    p.x = 3.0;
     p.y = -2.0;
     p.z = 0.0 ;
     geometry_msgs::PoseStamped goal = StampedPosefromSE2( p.x, p.y, 0.f );
     goal.header.frame_id = m_worldFrameId ;
     //std::vector<geometry_msgs::PoseStamped> plan;
+
+    std::cout <<"***"<<std::endl;
 
     std::cout << "Make global plan" <<std::endl;
     bool bplansuccess = mpo_gph->makePlan(start, goal, global_plan_);
@@ -684,6 +692,10 @@ int main(int argc, char** argv)
 
 //    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
     pruneGlobalPlan_t(robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
+    std::cout <<"Pruned global plan"<<std::endl;
+    for (int i = 0; i < global_plan_.size(); ++i) {
+        std::cout<< global_plan_[i].pose.position.x <<", " <<global_plan_[i].pose.position.y << std::endl;
+    }
 
     // 2. Transform global plan
     // Transform global plan to the frame of interest (w.r.t. the local costmap)
@@ -697,6 +709,10 @@ int main(int argc, char** argv)
         printf("Could not transform the global plan to the frame of the controller");
         std::string message = "Could not transform the global plan to the frame of the controller";
         return mbf_msgs::ExePathResult::INTERNAL_ERROR;
+    }
+    std::cout <<"Transformed global plan"<<std::endl;
+    for (int i = 0; i < transformed_plan.size(); ++i) {
+        std::cout<< transformed_plan[i].pose.position.x <<", " <<transformed_plan[i].pose.position.y << std::endl;
     }
 
     // 3. Check goal reached
@@ -760,8 +776,11 @@ int main(int argc, char** argv)
     // Do not allow config changes during the following optimization step
     boost::mutex::scoped_lock cfg_lock(cfg_.configMutex());
 
+    std::cout <<"***"<<std::endl;
+
     // Now perform the actual planning
 //   bool success = planner_->plan(robot_pose_, robot_goal_, robot_vel_, cfg_.goal_tolerance.free_goal_vel); // straight line init
+    std::cout<< "Plan teb"<<std::endl;
     bool success = planner_->plan(transformed_plan, &robot_vel_, cfg_.goal_tolerance.free_goal_vel);
     if (!success)
     {
@@ -854,7 +873,7 @@ int main(int argc, char** argv)
                      cfg_.robot.max_vel_x, cfg_.robot.max_vel_y, cfg_.robot.max_vel_trans, cfg_.robot.max_vel_theta,
                      cfg_.robot.max_vel_x_backwards);
 
-    std::cout <<"X: "<< cmd_vel.twist.linear.x<<", Y: "<<  cmd_vel.twist.linear.y <<", Z: "<< cmd_vel.twist.angular.z<< std::endl;
+//    std::cout <<"X: "<< cmd_vel.twist.linear.x<<", Y: "<<  cmd_vel.twist.linear.y <<", Z: "<< cmd_vel.twist.angular.z<< std::endl;
     // convert rot-vel to steering angle if desired (carlike robot).
     // The min_turning_radius is allowed to be slighly smaller since it is a soft-constraint
     // and opposed to the other constraints not affected by penalty_epsilon. The user might add a safety margin to the parameter itself.

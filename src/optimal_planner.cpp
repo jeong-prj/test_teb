@@ -237,6 +237,11 @@ bool TebOptimalPlanner::optimizeTEB(int iterations_innerloop, int iterations_out
     weight_multiplier *= cfg_->optim.weight_adapt_factor;
   }
 
+  std::cout<<"After optimize in Optimal planner" <<std::endl;
+  for (int i = 0; i < teb_.sizeTimeDiffs(); ++i) {
+    std::cout<< i << " time Diff: " << teb_.TimeDiff(i) <<" pose"<< teb_.Pose(i) << std::endl;
+  }
+
   return true;
 }
 
