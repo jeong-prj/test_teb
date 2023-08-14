@@ -725,6 +725,8 @@ public:
         double lineCost(int x0, int x1, int y0, int y1) const;
 
         double pointCost(int x, int y) const;
+
+        void showResults();
     };
 
 //! Abbrev. for shared instances of the TebOptimalPlanner

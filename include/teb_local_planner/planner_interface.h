@@ -162,6 +162,10 @@ public:
   virtual void visualize()
   {
   }
+//ej to show local plan
+  virtual void showResults(){
+
+  }
   
   virtual void updateRobotModel(RobotFootprintModelPtr robot_model)
   {

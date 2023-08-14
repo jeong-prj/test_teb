@@ -119,6 +119,36 @@ void TebOptimalPlanner::initialize(const TebConfig& cfg, ObstContainer* obstacle
 //  visualization_ = visualization;
 //}
 
+void TebOptimalPlanner::showResults() {
+//    // create path msg
+//    nav_msgs::Path teb_path;
+//    teb_path.header.frame_id = cfg_->map_frame;
+//    teb_path.header.stamp = ros::Time::now();
+//
+//    // create pose_array (along trajectory)
+//    geometry_msgs::PoseArray teb_poses;
+//    teb_poses.header.frame_id = teb_path.header.frame_id;
+//    teb_poses.header.stamp = teb_path.header.stamp;
+
+    // fill path msgs with teb configurations
+    for (int i=0; i < teb_.sizePoses(); i++)
+    {
+//        geometry_msgs::PoseStamped pose;
+//        pose.header.frame_id = teb_path.header.frame_id;
+//        pose.header.stamp = teb_path.header.stamp;
+//        pose.pose.position.x = teb.Pose(i).x();
+//        pose.pose.position.y = teb.Pose(i).y();
+//        pose.pose.position.z = cfg_->hcp.visualize_with_time_as_z_axis_scale*teb.getSumOfTimeDiffsUpToIdx(i);
+//        pose.pose.orientation = tf::createQuaternionMsgFromYaw(teb.Pose(i).theta());
+//        teb_path.poses.push_back(pose);
+//        teb_poses.poses.push_back(pose.pose);
+        std::cout << "Time "<<i<<" X: "<<teb_.Pose(i).x()<<", Y: "<<teb_.Pose(i).y() << std::endl;
+
+    }
+//    local_plan_pub_.publish(teb_path);
+//    teb_poses_pub_.publish(teb_poses);
+}
+
 //void TebOptimalPlanner::visualize()
 //{
 //  if (!visualization_)
@@ -236,11 +266,11 @@ bool TebOptimalPlanner::optimizeTEB(int iterations_innerloop, int iterations_out
     
     weight_multiplier *= cfg_->optim.weight_adapt_factor;
   }
-
-  std::cout<<"After optimize in Optimal planner" <<std::endl;
-  for (int i = 0; i < teb_.sizeTimeDiffs(); ++i) {
-    std::cout<< i << " time Diff: " << teb_.TimeDiff(i) <<" pose"<< teb_.Pose(i) << std::endl;
-  }
+    //ej after optimize
+//  std::cout<<"After optimize in Optimal planner" <<std::endl;
+//  for (int i = 0; i < teb_.sizeTimeDiffs(); ++i) {
+//    std::cout<< i << " time Diff: " << teb_.TimeDiff(i) <<" pose"<< teb_.Pose(i) << std::endl;
+//  }
 
   return true;
 }
