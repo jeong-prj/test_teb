@@ -612,14 +612,14 @@ int main(int argc, char** argv)
     printf("Start\n");
 
     std::cout <<"***"<<std::endl;
-    for (int idx = 0; idx < ; ++idx) {
-        planner_->clearPlanner();
+    int file_num = 10;
+    for (int idx = 0; idx < file_num; ++idx) {
 
-        std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt";
+        std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
         std::cout << "Load grid map" << gmapfile << std::endl;
         loadGridMap(gmapfile);
 
-        std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g.txt";
+        std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
         std::cout << "Load cost map" << cmapfile << std::endl;
         loadCostMap(cmapfile);
 
@@ -908,6 +908,8 @@ int main(int argc, char** argv)
         // store last command (for recovery analysis etc.)
         last_cmd_ = cmd_vel.twist;
         std::cout << idx <<" done " <<std::endl;
+
+        planner_->clearPlanner();
     }
     printf("done!\n");
 
