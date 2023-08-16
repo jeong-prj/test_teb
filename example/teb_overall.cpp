@@ -448,10 +448,11 @@ double convertTransRotVelToSteeringAngle_t(double v, double omega, double wheelb
     return std::atan(wheelbase / radius);
 }
 
-void loadGridMap( const std::string& gridmapfile)
-{
+bool loadGridMap( const std::string& gridmapfile){
 //    std::cout << "start load grid map "<<std::endl;
     autoexplorer::ifstream ifs_map( gridmapfile );
+    if(!ifs_map) return false;
+
     int nheight ;
     int nwidth ;
     int value ;
@@ -477,12 +478,16 @@ void loadGridMap( const std::string& gridmapfile)
 //        std::cout <<std::endl;
     }
     ifs_map.close();
+    return true;
 }
 
-void loadCostMap( const std::string& costmapfile)
+bool loadCostMap( const std::string& costmapfile)
 {
 //    std::cout << "start load cost map "<<std::endl;
     autoexplorer::ifstream ifs_map( costmapfile );
+
+    if(!ifs_map) return false;
+
     int nheight ;
     int nwidth ;
     int value ;
@@ -509,6 +514,7 @@ void loadCostMap( const std::string& costmapfile)
 //        std::cout <<std::endl;
     }
     ifs_map.close();
+    return true;
 }
 
 geometry_msgs::PoseStamped GetCurrPose ( )
@@ -614,14 +620,19 @@ int main(int argc, char** argv)
     std::cout <<"***"<<std::endl;
     int file_num = 10;
     for (int idx = 0; idx < file_num; ++idx) {
-
         std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
         std::cout << "Load grid map" << gmapfile << std::endl;
-        loadGridMap(gmapfile);
+        if(!loadGridMap(gmapfile)){
+            std::cout<< "Gridmap file is not exist" <<std::endl;
+            break;
+        }
 
         std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
         std::cout << "Load cost map" << cmapfile << std::endl;
-        loadCostMap(cmapfile);
+        if(!loadCostMap(cmapfile)){
+            std::cout<< "Costmap file is not exist" <<std::endl;
+            break;
+        }
 
         std::cout << "Set cost map 2d" << std::endl;
         setCostmap();
