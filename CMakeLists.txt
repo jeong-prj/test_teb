@@ -63,7 +63,7 @@ file(GLOB_RECURSE SRC_FILES
         src/sub_src/time.cpp
         src/sub_src/static_cache.cpp
 
-
+        src/sub_src/transform_data.cpp
 #        src/xml_/*.cpp
 
 #        src/sub_src/*.c
@@ -130,7 +130,7 @@ include_directories(
 ###
 
 # build mpbb lib
-add_library(test_teb SHARED ${SRC_FILES} include/ros/impl/duration.h)
+add_library(test_teb SHARED ${SRC_FILES} include/ros/impl/duration.h src/sub_src/transform_data.cpp)
 target_link_libraries(test_teb
         -dpthread
         ${Boost_LIBRARIES}
@@ -149,7 +149,7 @@ set_target_properties( test_teb PROPERTIES
 #set_target_properties( test_teb_run PROPERTIES
 #        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(teb_overall_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_overall.cpp include/ros/impl/duration.h)
+add_executable(teb_overall_run ${TEST_TEB_PROJ_DIRECTORY}/example/teb_overall.cpp include/ros/impl/duration.h include/transform_data.h)
 target_link_libraries( teb_overall_run test_teb)
 set_target_properties( teb_overall_run PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

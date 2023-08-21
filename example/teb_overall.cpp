@@ -16,6 +16,8 @@
 #include "costmap_2d/costmap_math.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
+#include "transform_data.h"
+
 // Params
 teb_local_planner::PlannerInterfacePtr planner_; //!< Instance of the underlying optimal planner class
 teb_local_planner::ObstContainer obstacles_; //!< Obstacle vector that should be considered during local trajectory optimization
@@ -42,7 +44,7 @@ costmap_2d::Costmap2D* mpo_costmap;
 //costmap_2d::Costmap2D* costmap_; //!< Pointer to the 2d costmap (obtained from the costmap ros wrapper)
 
 std::string m_worldFrameId = "map";
-//std::string m_mapFrameId ;
+std::string m_mapFrameId = "odom";
 std::string m_baseFrameId = "base_link";
 
 std::vector<geometry_msgs::Point> footprint_spec_; //!< Store the footprint of the robot
@@ -53,7 +55,22 @@ std::string global_frame_ = "map"; //!< The frame in which the controller will r
 
 bool goal_reached_; //!< store whether the goal is reached or not
 
+TfData map_to_odom;
+TfData odom_to_baselink;
 
+cv::Point2f gridmap2world( cv::Point img_pt_roi  ){
+    float fgx =  static_cast<float>(img_pt_roi.x) * m_gridmap.info.resolution + m_gridmap.info.origin.position.x  ;
+    float fgy =  static_cast<float>(img_pt_roi.y) * m_gridmap.info.resolution + m_gridmap.info.origin.position.y  ;
+
+    return cv::Point2f( fgx, fgy );
+}
+
+cv::Point world2gridmap( cv::Point2f grid_pt){
+    float fx = (grid_pt.x - m_gridmap.info.origin.position.x) / m_gridmap.info.resolution ;
+    float fy = (grid_pt.y - m_gridmap.info.origin.position.y) / m_gridmap.info.resolution ;
+
+    return cv::Point( (int)fx, (int)fy );
+}
 
 geometry_msgs::PoseStamped StampedPosefromSE2( const float& x, const float& y, const float& yaw_radian )
 {
@@ -459,13 +476,42 @@ bool loadGridMap( const std::string& gridmapfile){
     float origx ;
     float origy ;
     float resolution ;
+
+    std::string frame;
+    std::string child_frame;
+
+    float t_x;
+    float t_y;
+
+    float r_x;
+    float r_y;
+    float r_z;
+    float r_w;
+
     ifs_map >> nwidth >> nheight  >> origx >> origy >> resolution;
-    std::cout << "width: "<<nwidth<< ", height: " << nheight<< ", origin X: "<< origx<< ", origin Y: "<< origy<< ", res: "<< resolution <<std::endl;
     m_gridmap.info.height = nheight ;
     m_gridmap.info.width  = nwidth ;
     m_gridmap.info.origin.position.x = origx ;
     m_gridmap.info.origin.position.y = origy ;
     m_gridmap.info.resolution = resolution ;
+    std::cout << "width: "<<nwidth<< ", height: " << nheight<< ", origin X: "<< origx<< ", origin Y: "<< origy<< ", res: "<< resolution <<std::endl;
+
+    ifs_map >> frame >> child_frame;
+    ifs_map >> t_x >> t_y;
+    ifs_map >> r_x >> r_y >> r_z >> r_w;
+    map_to_odom.initialize(frame, child_frame, t_x, t_y, r_x, r_y, r_z, r_w);
+    std::cout << "map to odom (frame: "<<frame<< ", child_frame: " << child_frame <<std::endl
+                << ", translation X: "<< t_x<< ", translation Y: "<< t_y <<std::endl
+                << ", rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl;
+
+    ifs_map >> frame >> child_frame;
+    ifs_map >> t_x >> t_y;
+    ifs_map >> r_x >> r_y >> r_z >> r_w;
+    odom_to_baselink.initialize(frame, child_frame, t_x, t_y, r_x, r_y, r_z, r_w);
+    std::cout << "odom to base link (frame: "<<frame<< ", child_frame: " << child_frame <<std::endl
+              << ", translation X: "<< t_x<< ", translation Y: "<< t_y <<std::endl
+              << ", rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl;
+
 //    std::cout << "Gridmap data? ok?" <<std::endl;
     for( int ridx=0; ridx < nheight; ridx++ )
     {
