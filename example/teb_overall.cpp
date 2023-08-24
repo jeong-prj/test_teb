@@ -616,17 +616,13 @@ void setCostmap(){
     start.header.frame_id = m_worldFrameId;
 
     mpo_costmap = new costmap_2d::Costmap2D();
-//    mpo_gph->setCostmap(cmdata, m_globalcostmap.info.width, m_globalcostmap.info.height, m_globalcostmap.info.resolution,
-//					m_globalcostmap.info.origin.position.x, m_globalcostmap.info.origin.position.y) ;
-    //mpo_gph->setCostmap(Data, m_globalcostmap.info.width, m_globalcostmap.info.height, m_globalcostmap.info.resolution,
-	//				m_globalcostmap.info.origin.position.x, m_globalcostmap.info.origin.position.y) ;
 
-//ROS_INFO("resizing mpo_costmap \n");
     mpo_costmap->resizeMap( cmwidth, cmheight, cmresolution,
                             cmstartx, cmstarty );
-//ROS_INFO("mpo_costmap has been reset \n");
+
     unsigned char* pmap = mpo_costmap->getCharMap() ;
-//    printf("w h datlen : %d %d %d \n", cmwidth, cmheight, cmdata.size() );
+
+    // Set mp_cost_translation_table
     if (mp_cost_translation_table == NULL)
     {
         mp_cost_translation_table = new uint8_t[101];
@@ -664,19 +660,19 @@ int main(int argc, char** argv)
     printf("Start\n");
 
     std::cout <<"***"<<std::endl;
-    int file_num = 10;
+    int file_num = 7;
     for (int idx = 0; idx < file_num; ++idx) {
-        std::string gmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
-        std::cout << "Load grid map" << gmapfile << std::endl;
-        if(!loadGridMap(gmapfile)){
-            std::cout<< "Gridmap file is not exist" <<std::endl;
+        std::string lcmapfile = "/home/ej/Desktop/test_planner/src/maps/map_lc_" + std::to_string(idx) + ".txt";
+        std::cout << "Load LOCAL cost map" << lcmapfile << std::endl;
+        if(!loadGridMap(lcmapfile)){
+            std::cout<< " LOCAL cost file is not exist" <<std::endl;
             break;
         }
 
-        std::string cmapfile = "/home/ej/Desktop/test_teb_han/map_g_" + std::to_string(idx) + ".txt";
-        std::cout << "Load cost map" << cmapfile << std::endl;
-        if(!loadCostMap(cmapfile)){
-            std::cout<< "Costmap file is not exist" <<std::endl;
+        std::string gcmapfile = "/home/ej/Desktop/test_planner/src/maps/map_gc_" + std::to_string(idx) + ".txt";
+        std::cout << "Load GLOBAL cost map" << gcmapfile << std::endl;
+        if(!loadCostMap(gcmapfile)){
+            std::cout<< " GLOBAL cost file is not exist" <<std::endl;
             break;
         }
 
