@@ -3,14 +3,14 @@
 //
 
 #include "transform_data.h"
-/*
+
 TfData::TfData(){
 
 }
 
 TfData::~TfData(){
 
-}*/
+}
 void TfData::initialize(std::string p_frame, std::string c_frame,
                         float translation_x, float translation_y,
                         float rotation_x, float rotation_y, float rotation_z, float rotation_w){
