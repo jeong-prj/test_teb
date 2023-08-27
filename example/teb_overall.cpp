@@ -52,12 +52,14 @@ std::vector<geometry_msgs::Point> footprint_spec_; //!< Store the footprint of t
 double robot_inscribed_radius_; //!< The radius of the inscribed circle of the robot (collision possible)
 double robot_circumscribed_radius; //!< The radius of the circumscribed circle of the robot
 
-std::string global_frame_ = "map"; //!< The frame in which the controller will run
+std::string global_frame_ = "odom"; //!< The frame in which the controller will run
 
 bool goal_reached_; //!< store whether the goal is reached or not
 
 TfData map_to_odom;
 TfData odom_to_baselink;
+TfData map_to_baselink;
+
 teb_local_planner::PoseSE2 goal_;
 
 cv::Point2f gridmap2world( cv::Point img_pt_roi  ){
@@ -131,7 +133,7 @@ void initialize_t(){
     //    tf_ = tf2_ros::Buffer();
 }
 
-void transform_t(geometry_msgs::PoseStamped data_in, geometry_msgs::PoseStamped& data_out, TfData& p_tf){
+void transform_t(geometry_msgs::PoseStamped data_in, geometry_msgs::PoseStamped& data_out, TfData& p_tf, int mode){
     tf2::Vector3 v = tf2::Vector3(data_in.pose.position.x, data_in.pose.position.y, data_in.pose.position.z);
     tf2::Quaternion r = tf2::Quaternion(data_in.pose.orientation.x, data_in.pose.orientation.y, data_in.pose.orientation.z, data_in.pose.orientation.w);
 
@@ -140,13 +142,25 @@ void transform_t(geometry_msgs::PoseStamped data_in, geometry_msgs::PoseStamped&
     tf2::Transform t_out;
 
 //        tf2::Vector3 t_v = tf2::Vector3(t_in.translation.x, t_in.translation.y, t_in.translation.z);
-    tf2::Vector3 t_v = tf2::Vector3(p_tf.get_tX(), p_tf.get_tY(), 0);
-    t_out.setOrigin(t_v);
+    if(mode == 0){ // original
+        tf2::Vector3 t_v = tf2::Vector3(p_tf.get_tX(), p_tf.get_tY(), 0);
+        t_out.setOrigin(t_v);
 
-    // w at the end in the constructor
+        // w at the end in the constructor
 //      tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
-    tf2::Quaternion t_q = tf2::Quaternion(p_tf.get_rX(), p_tf.get_rY(), p_tf.get_rZ(), p_tf.get_rW());
-    t_out.setRotation(t_q);
+        tf2::Quaternion t_q = tf2::Quaternion(p_tf.get_rX(), p_tf.get_rY(), p_tf.get_rZ(), p_tf.get_rW());
+        t_out.setRotation(t_q);
+    }
+    else{ // reverse
+        tf2::Vector3 t_v = tf2::Vector3(p_tf.get_itX(), p_tf.get_itY(), 0);
+        t_out.setOrigin(t_v);
+
+        // w at the end in the constructor
+//      tf2::Quaternion t_q = tf2::Quaternion(t_in.rotation.x, t_in.rotation.y, t_in.rotation.z, t_in.rotation.w);
+        tf2::Quaternion t_q = tf2::Quaternion(p_tf.get_irX(), p_tf.get_irY(), p_tf.get_irZ(), p_tf.get_irW());
+        t_out.setRotation(t_q);
+    }
+
 
     // multifly transform matrix and input
     tf2::Transform v_out = t_out * tf2::Transform(r, v);
@@ -184,8 +198,8 @@ bool pruneGlobalPlan_t(const geometry_msgs::PoseStamped& global_pose, std::vecto
         // first, find transform matrix
         geometry_msgs::PoseStamped robot;
         // global pose -> robot
-        //    odom     -> base_link
-        transform_t(global_pose, robot, odom_to_baselink);
+        //    map     -> base_link
+        transform_t(global_pose, robot, map_to_baselink, 0);
 /*        tf2::Vector3 v = tf2::Vector3(global_pose.pose.position.x, global_pose.pose.position.y, global_pose.pose.position.z);
         tf2::Quaternion r = tf2::Quaternion(global_pose.pose.orientation.x, global_pose.pose.orientation.y, global_pose.pose.orientation.z, global_pose.pose.orientation.w);
 
@@ -274,7 +288,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
 
         //let's get the pose of the robot in the frame of the plan
         geometry_msgs::PoseStamped robot_pose;
-        transform_t(global_pose, robot_pose, odom_to_baselink);
+        transform_t(global_pose, robot_pose, map_to_baselink, 0);
 //        tf.transform(global_pose, robot_pose, plan_pose.header.frame_id);
 
         //we'll discard points on the plan that are outside the local costmap
@@ -318,9 +332,9 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
                (max_plan_length <= 0 || plan_length <= max_plan_length)) {
             const geometry_msgs::PoseStamped &pose = global_plan[i];
             // global plan pose -> global?
-            // tf problem
+            // tf problem map ->
             std::cout <<"First tf problem pose: "<< pose.header.frame_id << std::endl;
-//            transform_t(pose, newer_pose);
+            transform_t(pose, newer_pose, map_to_odom, 0);
 //            tf2::doTransform(pose, newer_pose, plan_to_global_transform);
 
             std::cout << i <<"nd pose: "<< newer_pose <<std::endl;
@@ -343,7 +357,7 @@ bool transformGlobalPlan_t(const tf2_ros::Buffer& tf, const std::vector<geometry
         if (transformed_plan.empty()) {
             //tf problem
             std::cout <<"Second tf global pose"<< global_plan.back().header.frame_id << std::endl;
-//            transform_t(global_plan.back(), newer_pose);
+            transform_t(global_plan.back(), newer_pose, map_to_odom, 0);
 //            tf2::doTransform(global_plan.back(), newer_pose, plan_to_global_transform);
 
             transformed_plan.push_back(newer_pose);
@@ -488,13 +502,12 @@ bool loadLCostMap( const std::string& gridmapfile){
     std::string frame;
     std::string child_frame;
 
-    float t_x;
-    float t_y;
+    float t_x, t_y;
+    float r_x, r_y, r_z, r_w;
 
-    float r_x;
-    float r_y;
-    float r_z;
-    float r_w;
+    float t_xI, t_yI;
+    float r_xI, r_yI, r_zI, r_wI;
+
 
     ifs_map >> nwidth >> nheight  >> origx >> origy >> resolution;
     m_localcostmap.info.height = nheight ;
@@ -515,19 +528,49 @@ bool loadLCostMap( const std::string& gridmapfile){
     ifs_map >> frame >> child_frame;
     ifs_map >> t_x >> t_y;
     ifs_map >> r_x >> r_y >> r_z >> r_w;
+    ifs_map >> child_frame >> frame;
+    ifs_map >> t_xI >> t_yI;
+    ifs_map >> r_xI >> r_yI >> r_zI >> r_wI;
     map_to_odom.initialize(frame, child_frame, t_x, t_y, r_x, r_y, r_z, r_w);
+    map_to_odom.setInverse(t_xI, t_yI, r_xI, r_yI, r_zI, r_wI);
     std::cout << "map to odom \n\t(frame: "<<frame<< ", child_frame: " << child_frame <<std::endl
                 << "\t translation X: "<< t_x<< ", translation Y: "<< t_y <<std::endl
-                << "\t rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl;
+                << "\t rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl
+                << "\t Inverse" <<std::endl
+                << "\t translation X: "<< t_xI<< ", translation Y: "<< t_yI <<std::endl
+                << "\t rotation X: "<< r_xI << ", rotation Y: "<< r_yI<< ", rotation Z: "<< r_zI<< ", rotation W: "<< r_wI<<")"<<std::endl;
 
     // Set TF odom -> base_link
     ifs_map >> frame >> child_frame;
     ifs_map >> t_x >> t_y;
     ifs_map >> r_x >> r_y >> r_z >> r_w;
+    ifs_map >> child_frame >> frame;
+    ifs_map >> t_xI >> t_yI;
+    ifs_map >> r_xI >> r_yI >> r_zI >> r_wI;
     odom_to_baselink.initialize(frame, child_frame, t_x, t_y, r_x, r_y, r_z, r_w);
+    odom_to_baselink.setInverse(t_xI, t_yI, r_xI, r_yI, r_zI, r_wI);
     std::cout << "odom to base link \n\t(frame: "<<frame<< ", child_frame: " << child_frame <<std::endl
               << "\t translation X: "<< t_x<< ", translation Y: "<< t_y <<std::endl
-              << "\t rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl;
+              << "\t rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl
+              << "\t Inverse" <<std::endl
+              << "\t translation X: "<< t_xI<< ", translation Y: "<< t_yI <<std::endl
+              << "\t rotation X: "<< r_xI << ", rotation Y: "<< r_yI<< ", rotation Z: "<< r_zI<< ", rotation W: "<< r_wI<<")"<<std::endl;
+
+    // Set TF map -> base_link
+    ifs_map >> frame >> child_frame;
+    ifs_map >> t_x >> t_y;
+    ifs_map >> r_x >> r_y >> r_z >> r_w;
+    ifs_map >> child_frame >> frame;
+    ifs_map >> t_xI >> t_yI;
+    ifs_map >> r_xI >> r_yI >> r_zI >> r_wI;
+    map_to_baselink.initialize(frame, child_frame, t_x, t_y, r_x, r_y, r_z, r_w);
+    map_to_baselink.setInverse(t_xI, t_yI, r_xI, r_yI, r_zI, r_wI);
+    std::cout << "map to base link \n\t(frame: "<<frame<< ", child_frame: " << child_frame <<std::endl
+              << "\t translation X: "<< t_x<< ", translation Y: "<< t_y <<std::endl
+              << "\t rotation X: "<< r_x << ", rotation Y: "<< r_y<< ", rotation Z: "<< r_z<< ", rotation W: "<< r_w<<")"<<std::endl
+              << "\t Inverse" <<std::endl
+              << "\t translation X: "<< t_xI<< ", translation Y: "<< t_yI <<std::endl
+              << "\t rotation X: "<< r_xI << ", rotation Y: "<< r_yI<< ", rotation Z: "<< r_zI<< ", rotation W: "<< r_wI<<")"<<std::endl;
 
 //    std::cout << "Gridmap data? ok?" <<std::endl;
     for( int ridx=0; ridx < nheight; ridx++ )
@@ -607,8 +650,11 @@ void setCostmap(nav_msgs::OccupancyGrid g_gridmap, std::string costmap){
     std::cout << "res: "<<cmresolution << ", start X: "<< cmstartx<< ", start Y: " << cmstarty<< ", width: " << cmwidth<< ", height: "<< cmheight<< std::endl;
     std::cout <<"cmdata size: "<< cmdata.size() <<std::endl;
 
-    m_robotpose.pose.pose.position.x = cmstartx;
-    m_robotpose.pose.pose.position.y = cmstarty;
+    // robot pose with map -> base_link
+    // By map -> odom -> base_link
+    m_robotpose.pose.pose.position.x = map_to_baselink.get_tX();
+    m_robotpose.pose.pose.position.y = map_to_baselink.get_tY();
+
 
 //    if( gmheight == 0 || gmwidth == 0
 //        || gmwidth  != cmwidth
@@ -689,7 +735,7 @@ int main(int argc, char** argv)
     printf("Start\n");
 
     std::cout <<"***"<<std::endl;
-    int file_num = 9;
+    int file_num = 5;
     for (int idx = 0; idx < file_num; ++idx) {
         std::string lcmapfile = "/home/ej/Desktop/test_planner/src/maps/map_lc_" + std::to_string(idx) + ".txt";
         std::cout << "Load LOCAL cost map" << lcmapfile << std::endl;
@@ -726,13 +772,14 @@ int main(int argc, char** argv)
         initialize_t();
 
         //  Set start position
-        std::cout << "Set start position" << std::endl;
         geometry_msgs::Point p;
-        p.x = mpo_lcostmap->getOriginX();
-        p.y = mpo_lcostmap->getOriginY();
+        std::cout << "Set start position" << std::endl;
+        geometry_msgs::PoseStamped start;
+        p.x = m_robotpose.pose.pose.position.x;
+        p.y = m_robotpose.pose.pose.position.y;
         p.z = 0.0;
-        geometry_msgs::PoseStamped start = StampedPosefromSE2(p.x, p.y, 0.f);
-        start.header.frame_id = m_mapFrameId;
+        start = StampedPosefromSE2(p.x, p.y, 0.f);
+        start.header.frame_id = m_worldFrameId;
 
         //  Set goal position
         std::cout << "Set goal position" << std::endl;
@@ -740,7 +787,7 @@ int main(int argc, char** argv)
         p.y = goal_.y();
         p.z = 0.0;
         geometry_msgs::PoseStamped goal = StampedPosefromSE2(p.x, p.y, 0.f);
-        goal.header.frame_id = m_mapFrameId;
+        goal.header.frame_id = m_worldFrameId;
         //std::vector<geometry_msgs::PoseStamped> plan;
 
         std::cout << "***" << std::endl;
@@ -776,7 +823,7 @@ int main(int argc, char** argv)
         robot_pose.pose.position.y = m_robotpose.pose.pose.position.y;
         robot_pose.pose.position.z = 0.0;
         robot_pose.pose.orientation.z = 1.0;
-        robot_pose.header.frame_id = m_baseFrameId;
+        robot_pose.header.frame_id = m_worldFrameId;
         robot_pose_ = teb_local_planner::PoseSE2(robot_pose.pose);
 
 //    pruneGlobalPlan_t(*tf_, robot_pose, global_plan_, cfg_.trajectory.global_plan_prune_distance);
@@ -810,7 +857,7 @@ int main(int argc, char** argv)
 //    tf2::doTransform(global_plan_.back(), global_goal, tf_plan_to_global);
         // tf problem
         std::cout <<"First tf problem pose: "<< global_plan_.back().header.frame_id << std::endl;
-//        transform_t(global_plan_.back(), global_goal);
+        transform_t(global_plan_.back(), global_goal, map_to_odom, 0);
         double dx = global_goal.pose.position.x - robot_pose_.x();
         double dy = global_goal.pose.position.y - robot_pose_.y();
 //    tf2::Quaternion q_tmp = tf2::impl::toQuaternion(global_goal.pose.orientation);

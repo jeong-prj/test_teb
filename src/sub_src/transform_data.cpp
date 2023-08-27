@@ -26,3 +26,13 @@ void TfData::initialize(std::string p_frame, std::string c_frame,
     r_w = rotation_w;
 }
 
+void TfData::setInverse(float translation_x, float translation_y,
+                float rotation_x, float rotation_y, float rotation_z, float rotation_w){
+    t_xI = translation_x;
+    t_yI = translation_y;
+
+    r_xI = rotation_x;
+    r_yI = rotation_y;
+    r_zI = rotation_z;
+    r_wI = rotation_w;
+}
