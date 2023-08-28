@@ -12,6 +12,8 @@ import tf
 from geometry_msgs.msg import PointStamped
 from move_base_msgs.msg import MoveBaseActionGoal
 
+from tf import transformations as t
+
 import rospkg 
 
 # Local costmap's frequency > global costmap.
@@ -68,6 +70,7 @@ class makeMapNode:
     
     
   def writeLCostMap(self, data):
+    rospy.sleep(4.0)
     rospy.loginfo("{0} Got a full LOCAL cost OccupancyGrid update".format(self.num))
      
     try:
@@ -82,8 +85,8 @@ class makeMapNode:
     wid = self._occ_lcost_metadata.info.width
     hei = self._occ_lcost_metadata.info.height
     ori_x=self._occ_lcost_metadata.info.origin.position.x
-    res = self._occ_lcost_metadata.info.resolution
     ori_y=self._occ_lcost_metadata.info.origin.position.y
+    res = self._occ_lcost_metadata.info.resolution
 
     map_lc.write("{0} {1} {2} {3} {4}\n".format(wid, hei, ori_x, ori_y, res))
     print "LOCAL cost map {0} {1} {2} {3} {4}\n".format(wid, hei, ori_x, ori_y, res)
@@ -104,6 +107,16 @@ class makeMapNode:
     map_lc.write("{0} {1}\n".format(tf_matrix[0][0], tf_matrix[0][1]))
     map_lc.write("{0} {1} {2} {3}\n".format(tf_matrix[1][0], tf_matrix[1][1], tf_matrix[1][2], tf_matrix[1][3]))
     
+    transform = t.concatenate_matrices(t.translation_matrix(tf_matrix[0]), t.quaternion_matrix(tf_matrix[1]))
+    inversed_transform = t.inverse_matrix(transform)
+    
+    translation = t.translation_from_matrix(inversed_transform)
+    quaternion = t.quaternion_from_matrix(inversed_transform)
+    
+    map_lc.write("{0} {1}\n".format("odom", "map"))
+    map_lc.write("{0} {1}\n".format(translation[0], translation[1]))
+    map_lc.write("{0} {1} {2} {3}\n".format(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
+    
     tf_matrix=None
     while tf_matrix is None:
       if tf_listener.canTransform(target_frame="/odom", source_frame="/base_link", time=rospy.Time(0)):
@@ -113,7 +126,39 @@ class makeMapNode:
     
     map_lc.write("{0} {1}\n".format("odom", "base_link"))
     map_lc.write("{0} {1}\n".format(tf_matrix[0][0], tf_matrix[0][1]))
+    map_lc.write("{0} {1} {2} {3}\n".format(tf_matrix[1][0], tf_matrix[1][1], tf_matrix[1][2], tf_matrix[1][3]))   
+        
+    transform = t.concatenate_matrices(t.translation_matrix(tf_matrix[0]), t.quaternion_matrix(tf_matrix[1]))
+    inversed_transform = t.inverse_matrix(transform)
+    
+    translation = t.translation_from_matrix(inversed_transform)
+    quaternion = t.quaternion_from_matrix(inversed_transform)
+    
+    map_lc.write("{0} {1}\n".format("base_link", "odom"))
+    map_lc.write("{0} {1}\n".format(translation[0], translation[1]))
+    map_lc.write("{0} {1} {2} {3}\n".format(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
+    
+    tf_matrix=None
+    while tf_matrix is None:
+      if tf_listener.canTransform(target_frame="/map", source_frame="/base_link", time=rospy.Time(0)):
+        tf_matrix = tf_listener.lookupTransform(target_frame="/map", source_frame="/base_link", time=rospy.Time(0))
+        print "{0} map to baselink".format(self.num)
+        print tf_matrix
+    
+    map_lc.write("{0} {1}\n".format("map", "base_link"))
+    map_lc.write("{0} {1}\n".format(tf_matrix[0][0], tf_matrix[0][1]))
     map_lc.write("{0} {1} {2} {3}\n".format(tf_matrix[1][0], tf_matrix[1][1], tf_matrix[1][2], tf_matrix[1][3]))    
+    
+    transform = t.concatenate_matrices(t.translation_matrix(tf_matrix[0]), t.quaternion_matrix(tf_matrix[1]))
+    inversed_transform = t.inverse_matrix(transform)
+    
+    translation = t.translation_from_matrix(inversed_transform)
+    quaternion = t.quaternion_from_matrix(inversed_transform)
+    
+    map_lc.write("{0} {1}\n".format("base_link", "map"))
+    map_lc.write("{0} {1}\n".format(translation[0], translation[1]))
+    map_lc.write("{0} {1} {2} {3}\n".format(quaternion[0], quaternion[1], quaternion[2], quaternion[3]))
+    
     
     i = 0
     for x in self._occ_lcost_metadata.data:   
@@ -147,7 +192,7 @@ class makeMapNode:
     
     i = 0
     for x in self._occ_gcost_metadata.data:   
-      if i < wid:
+      if i < wid_g:
         map_gc.write("{0} ".format(x))
         i += 1
       else:

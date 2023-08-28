@@ -789,6 +789,9 @@ int main(int argc, char** argv)
         geometry_msgs::PoseStamped goal = StampedPosefromSE2(p.x, p.y, 0.f);
         goal.header.frame_id = m_worldFrameId;
         //std::vector<geometry_msgs::PoseStamped> plan;
+        std::cout << "***" << std::endl;
+        std::cout << "Check goal" << goal.pose.position.x <<", "<<goal.pose.position.y
+                  <<  " goal: "<<goal_.x() <<", " << goal_.y()<<std::endl;
 
         std::cout << "***" << std::endl;
 
